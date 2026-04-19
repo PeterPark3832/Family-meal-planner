@@ -51,6 +51,7 @@
     // ═══════════════════════════════════════════════════
     const SAVE_KEY   = 'fmp_v2';
     const CUSTOM_KEY = 'fmp_custom_meals';
+    const RATING_KEY = 'fmp_ratings';
 
     const MEALS = [
       // 한식 아침
@@ -162,6 +163,83 @@
       custom:   { label:'직접입력', emoji:'✏️', bg:'bg-gray-50', border:'border-gray-300',   badge:'bg-gray-100 text-gray-600',      bar:'bg-gray-400'   },
     };
 
+    const MEAL_INGREDIENTS = {
+      '미역국+밥':['미역','소고기','대파'], '된장국+밥':['두부','애호박','대파'],
+      '계란프라이+밥':['계란'], '흰죽':['쌀'], '야채죽':['쌀','당근','양파','애호박'],
+      '호박죽':['단호박'], '김치볶음밥':['김치','계란'], '참치마요덮밥':['참치캔','계란','오이'],
+      '김치찌개':['김치','돼지고기','두부','대파'], '된장찌개':['두부','감자','애호박','대파'],
+      '순두부찌개':['순두부','바지락','대파'], '부대찌개':['햄','소시지','김치','두부'],
+      '청국장찌개':['청국장','두부','감자'], '불고기':['소고기','양파','대파','버섯'],
+      '제육볶음':['돼지고기','양파','대파','깻잎'], '갈비찜':['갈비','당근','감자','무'],
+      '닭볶음탕':['닭고기','감자','당근','대파'], '잡채':['당면','소고기','시금치','당근','버섯'],
+      '비빔밥':['계란','시금치','당근','콩나물','고사리'], '볶음밥':['계란','당근','양파','대파'],
+      '삼겹살구이':['삼겹살','상추','마늘'], '두부조림':['두부','대파'],
+      '계란찜':['계란','대파'], '감자조림':['감자'], '고등어조림':['고등어','무','대파'],
+      '오징어볶음':['오징어','양파','대파','당근'], '삼치구이':['삼치'],
+      '콩나물국밥':['콩나물','계란'], '떡국':['떡국떡','계란','대파'],
+      '참치김치찌개':['참치캔','김치','두부'], '돼지불백':['돼지고기','양파','대파'],
+      '소불고기덮밥':['소고기','양파','버섯'], '닭갈비':['닭고기','고구마','양배추','대파'],
+      '황태해장국':['황태','계란','대파'], '순대국밥':['순대','대파'],
+      '냉면':['냉면','오이','계란'], '떡볶이':['떡볶이떡','어묵','대파'],
+      '만두국':['만두','계란','대파'], '육개장':['소고기','고사리','대파','숙주'],
+      '갈비탕':['갈비','대파','무'],
+      '오믈렛':['계란','양파','피망'], '팬케이크':['계란','우유','버터'],
+      '프렌치토스트':['식빵','계란','우유'], '샌드위치':['식빵','햄','계란','양상추','토마토'],
+      '베이글+크림치즈':['베이글','크림치즈'], '시리얼+우유':['시리얼','우유'],
+      '요거트+그래놀라':['요거트','그래놀라'],
+      '크림파스타':['파스타','생크림','베이컨','양파'], '토마토파스타':['파스타','토마토소스','다진고기','양파'],
+      '오일파스타':['파스타','마늘'], '까르보나라':['파스타','계란','베이컨','치즈'],
+      '미트볼 스파게티':['파스타','다진고기','토마토소스','양파'],
+      '피자':['피자도우','모짜렐라','토마토소스','피망'], '함박스테이크':['다진고기','양파','계란'],
+      '리조또':['쌀','버터','양파','파마산치즈'], '그라탕':['감자','생크림','치즈','베이컨'],
+      '크림수프':['감자','생크림','양파','버터'], '카레라이스':['카레가루','감자','당근','양파','닭고기'],
+      '오므라이스':['계란','닭고기','양파'], '치킨 스테이크':['닭가슴살'],
+      '클램차우더':['조개','감자','생크림','양파'], '라자냐':['라자냐면','다진고기','모짜렐라','토마토소스'],
+      '닭가슴살 샐러드':['닭가슴살','양상추','토마토','오이'], '비프 스튜':['소고기','감자','당근','양파'],
+      '파니니':['식빵','햄','모짜렐라','토마토'], '퀘사디야':['또띠야','닭고기','피망','치즈'],
+      '짜장면':['중화면','춘장','돼지고기','양파','감자'], '짬뽕':['중화면','오징어','홍합','양파','대파'],
+      '중화볶음밥':['계란','당근','양파','대파'], '탕수육':['돼지고기','피망','양파'],
+      '마파두부':['두부','다진돼지고기','대파'], '깐풍기':['닭고기','피망','대파'],
+      '유린기':['닭고기','오이','대파'], '팔보채':['새우','오징어','피망','당근'],
+      '짬뽕밥':['오징어','홍합','양파','대파'], '중화풍 잡채':['당면','당근','양파','버섯'],
+      '고추잡채':['돼지고기','피망','양파'], '훠궈 (전골)':['소고기','새우','두부','버섯','배추'],
+      '라멘':['라멘면','돼지고기','계란','대파','버섯'], '우동':['우동면','어묵','대파'],
+      '소바':['소바면','무','대파'], '돈카츠':['돼지고기','계란','빵가루'],
+      '오야코동':['닭고기','계란','양파','대파'], '카츠동':['돼지고기','계란','양파'],
+      '규동':['소고기','양파'], '연어덮밥':['연어','아보카도','오이'],
+      '나베 (전골)':['배추','두부','버섯','닭고기','대파'], '야끼소바':['중화면','돼지고기','양배추','당근'],
+      '텐동':['새우','계란','고구마'], '미소라멘':['라멘면','버터','대파','옥수수'],
+      '스시 (가정식)':['연어','참치','계란'], '아게다시두부':['두부','대파'],
+      '오코노미야키':['계란','양배추','돼지고기'],
+    };
+
+    const INGREDIENT_CATEGORY = {
+      '소고기':'육류/달걀','돼지고기':'육류/달걀','닭고기':'육류/달걀','닭가슴살':'육류/달걀',
+      '계란':'육류/달걀','갈비':'육류/달걀','삼겹살':'육류/달걀','다진고기':'육류/달걀',
+      '다진돼지고기':'육류/달걀','베이컨':'육류/달걀','햄':'육류/달걀','소시지':'육류/달걀',
+      '오징어':'해산물','새우':'해산물','연어':'해산물','참치':'해산물','홍합':'해산물',
+      '바지락':'해산물','조개':'해산물','참치캔':'해산물','어묵':'해산물','순대':'해산물',
+      '고등어':'해산물','삼치':'해산물','황태':'해산물',
+      '대파':'채소/과일','양파':'채소/과일','당근':'채소/과일','감자':'채소/과일',
+      '고구마':'채소/과일','애호박':'채소/과일','단호박':'채소/과일','시금치':'채소/과일',
+      '콩나물':'채소/과일','고사리':'채소/과일','숙주':'채소/과일','상추':'채소/과일',
+      '양상추':'채소/과일','깻잎':'채소/과일','피망':'채소/과일','양배추':'채소/과일',
+      '오이':'채소/과일','토마토':'채소/과일','아보카도':'채소/과일','마늘':'채소/과일',
+      '배추':'채소/과일','버섯':'채소/과일','무':'채소/과일','미역':'채소/과일','옥수수':'채소/과일',
+      '두부':'두부/유제품','순두부':'두부/유제품','생크림':'두부/유제품','치즈':'두부/유제품',
+      '모짜렐라':'두부/유제품','파마산치즈':'두부/유제품','크림치즈':'두부/유제품',
+      '버터':'두부/유제품','우유':'두부/유제품','요거트':'두부/유제품',
+      '쌀':'곡류/면/빵','파스타':'곡류/면/빵','중화면':'곡류/면/빵','우동면':'곡류/면/빵',
+      '소바면':'곡류/면/빵','라멘면':'곡류/면/빵','식빵':'곡류/면/빵','베이글':'곡류/면/빵',
+      '또띠야':'곡류/면/빵','피자도우':'곡류/면/빵','라자냐면':'곡류/면/빵','당면':'곡류/면/빵',
+      '냉면':'곡류/면/빵','떡국떡':'곡류/면/빵','떡볶이떡':'곡류/면/빵','만두':'곡류/면/빵','빵가루':'곡류/면/빵',
+      '김치':'가공/소스','춘장':'가공/소스','토마토소스':'가공/소스','카레가루':'가공/소스',
+      '청국장':'가공/소스','그래놀라':'가공/소스','시리얼':'가공/소스',
+    };
+
+    const CAT_ORDER = ['육류/달걀','해산물','채소/과일','두부/유제품','곡류/면/빵','가공/소스','기타'];
+    const CAT_EMOJI = { '육류/달걀':'🥩','해산물':'🐟','채소/과일':'🥦','두부/유제품':'🧀','곡류/면/빵':'🌾','가공/소스':'🫙','기타':'📦' };
+
     const MEAL_TYPES = [
       { id:'breakfast', label:'아침', emoji:'🌅' },
       { id:'lunch',     label:'점심', emoji:'☀️' },
@@ -180,13 +258,14 @@
 
     const hasKids = (members) => members.some(m => m.type === 'child');
 
-    const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = []) => {
+    const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = [], ratings = {}) => {
       const all = [...MEALS, ...customMeals];
       return all.filter(m =>
         (m.isUserCustom || cuisines.includes(m.cuisine)) &&
         m.types.includes(mealType) &&
         m.minAge <= minAge &&
-        (!noSpicy || !m.spicy)
+        (!noSpicy || !m.spicy) &&
+        ((ratings[m.name]?.likes || 0) - (ratings[m.name]?.dislikes || 0)) > -2
       );
     };
 
@@ -199,7 +278,18 @@
       return a;
     };
 
-    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = []) {
+    const ratedShuffle = (arr, ratings = {}) =>
+      arr
+        .map(m => {
+          const r = ratings[m.name] || { likes:0, dislikes:0 };
+          const score = r.likes - r.dislikes;
+          const weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          return { m, priority: Math.random() * weight };
+        })
+        .sort((a, b) => b.priority - a.priority)
+        .map(x => x.m);
+
+    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
@@ -207,11 +297,9 @@
 
         for (const mt of ['breakfast','lunch','dinner']) {
           if (childrenPresent) {
-            // 성인: 나이 제한 없음, 사용자 noSpicy 따름
-            const adultPool = getPool(mt, cuisines, 99, noSpicy, customMeals);
-            // 아이: 나이 기반 필터 + 만 6세 이하 자동 매운 음식 제외
+            const adultPool = getPool(mt, cuisines, 99, noSpicy, customMeals, ratings);
             const childNoSpicy = minAge <= 6 || noSpicy;
-            const childPool = getPool(mt, cuisines, minAge, childNoSpicy, customMeals);
+            const childPool = getPool(mt, cuisines, minAge, childNoSpicy, customMeals, ratings);
 
             const usedAdult = new Set(), usedChild = new Set();
             for (let wd = lookback; wd < d; wd++) {
@@ -220,15 +308,14 @@
             }
 
             const freshAdult = adultPool.filter(m => !usedAdult.has(m.name));
-            const chosenAdult = shuffle(freshAdult.length ? freshAdult : adultPool)[0]
+            const chosenAdult = ratedShuffle(freshAdult.length ? freshAdult : adultPool, ratings)[0]
               || { name:'직접 입력', cuisine:'custom' };
 
-            // 아이 메뉴는 성인 메뉴와 다른 것 우선 배정
             const childExcludes = new Set([...usedChild, chosenAdult.name]);
             const freshChildDiff = childPool.filter(m => !childExcludes.has(m.name));
             const freshChild     = childPool.filter(m => !usedChild.has(m.name));
-            const chosenChild = shuffle(
-              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool)
+            const chosenChild = ratedShuffle(
+              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings
             )[0] || { name:'직접 입력', cuisine:'custom' };
 
             plan[d][mt] = {
@@ -236,15 +323,14 @@
               child: { name: chosenChild.name, cuisine: chosenChild.cuisine },
             };
           } else {
-            // 통합 모드 (아이 없을 때)
-            const pool = getPool(mt, cuisines, minAge, noSpicy, customMeals);
+            const pool = getPool(mt, cuisines, minAge, noSpicy, customMeals, ratings);
             if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
             const used = new Set();
             for (let wd = lookback; wd < d; wd++) {
               if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
             }
             const fresh = pool.filter(m => !used.has(m.name));
-            const chosen = shuffle(fresh.length ? fresh : pool)[0];
+            const chosen = ratedShuffle(fresh.length ? fresh : pool, ratings)[0];
             plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
           }
         }
@@ -252,10 +338,10 @@
       return plan;
     }
 
-    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false, customMeals = []) {
-      const pool = getPool(mealType, cuisines, minAge, noSpicy, customMeals).filter(m => m.name !== excludeName);
+    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false, customMeals = [], ratings = {}) {
+      const pool = getPool(mealType, cuisines, minAge, noSpicy, customMeals, ratings).filter(m => m.name !== excludeName);
       if (!pool.length) return null;
-      return shuffle(pool)[0];
+      return ratedShuffle(pool, ratings)[0];
     }
 
     function formatTime(ts) {
@@ -269,32 +355,45 @@
     // ═══════════════════════════════════════════════════
 
     // 분리 모드: 한 사람의 하프-셀
-    function HalfCell({ meal, label, icon, onClick }) {
+    function HalfCell({ meal, icon, onClick, onRate, ratings = {} }) {
       const info = CUISINE_INFO[meal?.cuisine || 'custom'];
+      const score = meal?.name ? ((ratings[meal.name]?.likes||0) - (ratings[meal.name]?.dislikes||0)) : 0;
       return (
-        <div onClick={onClick}
-          className={`meal-card cursor-pointer border rounded-lg p-1.5 transition-all hover:shadow-sm ${
-            meal?.name ? `${info.border} ${info.bg}` : 'border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50'
-          }`}>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] flex-shrink-0">{icon}</span>
-            <span className="text-[11px] font-semibold text-gray-800 leading-tight truncate flex-1">
-              {meal?.name || <span className="text-gray-300">+ 추가</span>}
-            </span>
-            {meal?.name && <span className="text-xs flex-shrink-0">{info.emoji}</span>}
+        <div className="relative">
+          <div onClick={onClick}
+            className={`meal-card cursor-pointer border rounded-lg p-1.5 transition-all hover:shadow-sm ${
+              meal?.name
+                ? `${info.border} ${info.bg}${score >= 2 ? ' ring-1 ring-green-300' : score <= -1 ? ' ring-1 ring-red-200' : ''}`
+                : 'border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50'
+            }`}>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] flex-shrink-0">{icon}</span>
+              <span className="text-[11px] font-semibold text-gray-800 leading-tight truncate flex-1">
+                {meal?.name || <span className="text-gray-300">+ 추가</span>}
+              </span>
+              {meal?.name && <span className="text-xs flex-shrink-0">{info.emoji}</span>}
+            </div>
+            {meal?.note && <p className="text-[9px] text-gray-400 mt-0.5 truncate pl-4">{meal.note}</p>}
           </div>
-          {meal?.note && <p className="text-[9px] text-gray-400 mt-0.5 truncate pl-4">{meal.note}</p>}
+          {meal?.name && (
+            <div className="dice-btn absolute bottom-0.5 right-0.5 flex gap-0.5">
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
+                className={`w-4 h-4 bg-white border rounded flex items-center justify-center text-[8px] shadow-sm hover:bg-green-50 hover:border-green-300 ${score > 0 ? 'border-green-300' : 'border-gray-200'}`}>👍</button>
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
+                className={`w-4 h-4 bg-white border rounded flex items-center justify-center text-[8px] shadow-sm hover:bg-red-50 hover:border-red-300 ${score < 0 ? 'border-red-300' : 'border-gray-200'}`}>👎</button>
+            </div>
+          )}
         </div>
       );
     }
 
-    function MealCell({ meal, hasChildren, onClick, onClickAdult, onClickChild, onRegen }) {
+    function MealCell({ meal, hasChildren, onClick, onClickAdult, onClickChild, onRegen, onRate, ratings = {} }) {
       // ── 분리 모드 (아이 있을 때) ──────────────────────
       if (hasChildren) {
         return (
           <div className="cell-wrap relative space-y-1">
-            <HalfCell meal={meal?.adult} label="성인" icon="👨" onClick={onClickAdult} />
-            <HalfCell meal={meal?.child} label="아이" icon="🧒" onClick={onClickChild} />
+            <HalfCell meal={meal?.adult} icon="👨" onClick={onClickAdult} onRate={onRate} ratings={ratings} />
+            <HalfCell meal={meal?.child} icon="🧒" onClick={onClickChild} onRate={onRate} ratings={ratings} />
             <button
               onClick={(e) => { e.stopPropagation(); onRegen('both'); }}
               className="dice-btn absolute top-0.5 right-0.5 w-5 h-5 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-orange-50 hover:border-orange-300"
@@ -305,6 +404,7 @@
 
       // ── 통합 모드 (아이 없을 때) ──────────────────────
       const info = CUISINE_INFO[meal?.cuisine || 'custom'];
+      const score = meal?.name ? ((ratings[meal.name]?.likes||0) - (ratings[meal.name]?.dislikes||0)) : 0;
       if (!meal?.name) {
         return (
           <div onClick={onClick}
@@ -316,7 +416,7 @@
       return (
         <div className="cell-wrap relative">
           <div onClick={onClick}
-            className={`meal-card border-2 ${info.border} ${info.bg} rounded-xl p-2.5 min-h-[72px] cursor-pointer`}>
+            className={`meal-card border-2 ${info.border} ${info.bg} rounded-xl p-2.5 min-h-[72px] cursor-pointer${score >= 2 ? ' ring-2 ring-green-300' : score <= -1 ? ' ring-2 ring-red-200' : ''}`}>
             <div className="flex items-start justify-between gap-1">
               <span className="text-xs font-medium text-gray-800 leading-tight">{meal.name}</span>
               <span className="text-sm flex-shrink-0">{info.emoji}</span>
@@ -324,6 +424,7 @@
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
               {meal.note && <span title={meal.note} className="text-[10px] text-gray-400 cursor-help">📝</span>}
+              {score >= 2 && <span className="text-[10px] text-green-600 font-medium">👍 자주 먹어요</span>}
             </div>
             {meal.note && (
               <p className="text-[10px] text-gray-400 mt-1 leading-tight truncate" title={meal.note}>{meal.note}</p>
@@ -333,6 +434,12 @@
             onClick={(e) => { e.stopPropagation(); onRegen('unified'); }}
             className="dice-btn absolute top-1.5 right-1.5 w-6 h-6 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs shadow-sm hover:bg-orange-50 hover:border-orange-300"
             title="다른 메뉴로 변경">🎲</button>
+          <div className="dice-btn absolute bottom-1.5 right-1.5 flex gap-0.5">
+            <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
+              className={`w-5 h-5 bg-white border rounded-md flex items-center justify-center text-[10px] shadow-sm hover:bg-green-50 hover:border-green-300 ${score > 0 ? 'border-green-300' : 'border-gray-200'}`}>👍</button>
+            <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
+              className={`w-5 h-5 bg-white border rounded-md flex items-center justify-center text-[10px] shadow-sm hover:bg-red-50 hover:border-red-300 ${score < 0 ? 'border-red-300' : 'border-gray-200'}`}>👎</button>
+          </div>
         </div>
       );
     }
@@ -663,6 +770,128 @@
     }
 
     // ═══════════════════════════════════════════════════
+    //  컴포넌트: 장보기 목록 모달
+    // ═══════════════════════════════════════════════════
+    function ShoppingListModal({ mealPlan, period, hasChildren, onClose }) {
+      const [checked, setChecked] = useState(new Set());
+      const [copied, setCopied]   = useState(false);
+
+      const { grouped, totalCount } = useMemo(() => {
+        const mealNames = new Set();
+        for (let d = 0; d < period; d++) {
+          for (const mt of ['breakfast','lunch','dinner']) {
+            const slot = mealPlan[d]?.[mt];
+            if (!slot) continue;
+            if (hasChildren) {
+              if (slot.adult?.name) mealNames.add(slot.adult.name);
+              if (slot.child?.name) mealNames.add(slot.child.name);
+            } else {
+              if (slot.name) mealNames.add(slot.name);
+            }
+          }
+        }
+        const ingredients = new Set();
+        mealNames.forEach(name => (MEAL_INGREDIENTS[name] || []).forEach(i => ingredients.add(i)));
+        const groups = {};
+        ingredients.forEach(ing => {
+          const cat = INGREDIENT_CATEGORY[ing] || '기타';
+          if (!groups[cat]) groups[cat] = [];
+          groups[cat].push(ing);
+        });
+        CAT_ORDER.forEach(cat => { if (groups[cat]) groups[cat].sort(); });
+        return { grouped: groups, totalCount: ingredients.size };
+      }, [mealPlan, period, hasChildren]);
+
+      const toggle = (item) => setChecked(prev => {
+        const next = new Set(prev);
+        next.has(item) ? next.delete(item) : next.add(item);
+        return next;
+      });
+
+      const remaining = totalCount - checked.size;
+
+      const copyList = () => {
+        const lines = ['🛒 장보기 목록\n'];
+        CAT_ORDER.forEach(cat => {
+          const items = (grouped[cat] || []).filter(i => !checked.has(i));
+          if (items.length) {
+            lines.push(`[${CAT_EMOJI[cat]} ${cat}]`);
+            items.forEach(i => lines.push(`  ☐ ${i}`));
+            lines.push('');
+          }
+        });
+        navigator.clipboard.writeText(lines.join('\n')).then(() => {
+          setCopied(true); setTimeout(() => setCopied(false), 2000);
+        });
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-3 sm:p-6" onClick={onClose}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden slide-up" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">🛒 장보기 목록</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    총 {totalCount}가지 재료 · 남은 항목 <span className="text-green-600 font-bold">{remaining}개</span>
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={copyList}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${copied ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    {copied ? '✓ 복사됨' : '📋 복사'}
+                  </button>
+                  <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto" style={{maxHeight:'65vh'}}>
+              {totalCount === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-3xl mb-2">🧺</div>
+                  <p className="text-sm">식단에 등록된 재료가 없어요</p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-4">
+                  {CAT_ORDER.filter(cat => grouped[cat]).map(cat => (
+                    <div key={cat}>
+                      <p className="text-xs font-bold text-gray-500 mb-2">{CAT_EMOJI[cat]} {cat}</p>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {grouped[cat].map(item => (
+                          <button key={item} onClick={() => toggle(item)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm text-left transition-all ${
+                              checked.has(item)
+                                ? 'bg-gray-50 border-gray-200 text-gray-300 line-through'
+                                : 'bg-white border-gray-200 text-gray-700 hover:border-green-300 hover:bg-green-50'
+                            }`}>
+                            <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] ${checked.has(item) ? 'bg-gray-300 border-gray-300 text-white' : 'border-gray-300'}`}>
+                              {checked.has(item) ? '✓' : ''}
+                            </span>
+                            {item}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {checked.size > 0 && (
+              <div className="p-3 border-t border-gray-100 bg-gray-50">
+                <button onClick={() => setChecked(new Set())}
+                  className="w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                  체크 모두 해제
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
     //  컴포넌트: 요리 분포 통계
     // ═══════════════════════════════════════════════════
     function StatsPanel({ mealPlan, period, hasChildren }) {
@@ -967,12 +1196,13 @@
     // ═══════════════════════════════════════════════════
     //  식단표 화면
     // ═══════════════════════════════════════════════════
-    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport, customMeals = [], onAddCustomMeal, onDeleteCustomMeal }) {
-      const [week, setWeek]         = useState(0);
-      const [editTarget, setEdit]   = useState(null);
-      const [copied, setCopied]     = useState(false);
+    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport, customMeals = [], onAddCustomMeal, onDeleteCustomMeal, ratings = {}, onRate }) {
+      const [week, setWeek]             = useState(0);
+      const [editTarget, setEdit]       = useState(null);
+      const [copied, setCopied]         = useState(false);
       const [showStats, setShowStats]   = useState(false);
-      const [showCustomDB, setShowCustomDB] = useState(false);
+      const [showCustomDB, setShowCustomDB]     = useState(false);
+      const [showShopping, setShowShopping]     = useState(false);
       const fileInputRef = React.useRef(null);
 
       const totalWeeks  = Math.ceil(config.period / 7);
@@ -1003,9 +1233,9 @@
         if (mode === 'both') {
           const adultCur = mealPlan[day]?.[mt]?.adult?.name;
           const childCur = mealPlan[day]?.[mt]?.child?.name;
-          const cAdult = pickOneMeal(mt, config.cuisines, 99,    adultCur, config.noSpicy, customMeals);
+          const cAdult = pickOneMeal(mt, config.cuisines, 99,    adultCur, config.noSpicy, customMeals, ratings);
           const childNoSpicy = minAge <= 6 || config.noSpicy;
-          const cChild = pickOneMeal(mt, config.cuisines, minAge, childCur, childNoSpicy, customMeals);
+          const cChild = pickOneMeal(mt, config.cuisines, minAge, childCur, childNoSpicy, customMeals, ratings);
           setMealPlan(prev => ({
             ...prev,
             [day]: {
@@ -1018,7 +1248,7 @@
           }));
         } else {
           const current = mealPlan[day]?.[mt]?.name;
-          const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy, customMeals);
+          const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy, customMeals, ratings);
           if (!chosen) return;
           setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
         }
@@ -1110,6 +1340,10 @@
                 className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 ⭐ 내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}
               </button>
+              <button onClick={() => setShowShopping(true)}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                🛒 장보기
+              </button>
               <button onClick={exportText}
                 className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 {copied ? '✓ 복사됨!' : '📋 텍스트 복사'}
@@ -1189,6 +1423,8 @@
                             onClickAdult={children ? () => setEdit({ day:di, mt:mt.id, who:'adult' }) : undefined}
                             onClickChild={children ? () => setEdit({ day:di, mt:mt.id, who:'child' }) : undefined}
                             onRegen={(mode) => regenOne(di, mt.id, mode)}
+                            onRate={onRate}
+                            ratings={ratings}
                           />
                         </div>
                       );
@@ -1249,6 +1485,16 @@
               onClose={() => setShowCustomDB(false)}
             />
           )}
+
+          {/* 장보기 목록 모달 */}
+          {showShopping && (
+            <ShoppingListModal
+              mealPlan={mealPlan}
+              period={config.period}
+              hasChildren={children}
+              onClose={() => setShowShopping(false)}
+            />
+          )}
         </div>
       );
     }
@@ -1263,6 +1509,7 @@
       const [savedAt, setSavedAt]       = useState(null);
       const [restore, setRestore]       = useState(null);
       const [customMeals, setCustomMeals] = useState([]);
+      const [ratings, setRatings]         = useState({});
 
       // 시작 시 localStorage 확인
       useEffect(() => {
@@ -1276,6 +1523,10 @@
         try {
           const cm = localStorage.getItem(CUSTOM_KEY);
           if (cm) setCustomMeals(JSON.parse(cm) || []);
+        } catch(e) {}
+        try {
+          const rt = localStorage.getItem(RATING_KEY);
+          if (rt) setRatings(JSON.parse(rt) || {});
         } catch(e) {}
       }, []);
 
@@ -1297,17 +1548,32 @@
         } else {
           const minAge    = getMinAge(cfgOrConfig.members);
           const children  = hasKids(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals));
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals, ratings));
         }
         setScreen('plan');
-      }, [customMeals]);
+      }, [customMeals, ratings]);
 
       const handleRegen = useCallback(() => {
         if (!config) return;
         const minAge   = getMinAge(config.members);
         const children = hasKids(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals));
-      }, [config, customMeals]);
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals, ratings));
+      }, [config, customMeals, ratings]);
+
+      const handleRate = useCallback((mealName, type) => {
+        setRatings(prev => {
+          const r = prev[mealName] || { likes: 0, dislikes: 0 };
+          const next = {
+            ...prev,
+            [mealName]: {
+              likes:    type === 'like'    ? r.likes + 1    : r.likes,
+              dislikes: type === 'dislike' ? r.dislikes + 1 : r.dislikes,
+            },
+          };
+          try { localStorage.setItem(RATING_KEY, JSON.stringify(next)); } catch(e) {}
+          return next;
+        });
+      }, []);
 
       const handleImport = useCallback((cfg, plan) => {
         setConfig(cfg);
@@ -1343,6 +1609,8 @@
             customMeals={customMeals}
             onAddCustomMeal={addCustomMeal}
             onDeleteCustomMeal={deleteCustomMeal}
+            ratings={ratings}
+            onRate={handleRate}
           />
         );
       }
