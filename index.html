@@ -773,10 +773,12 @@
     //  컴포넌트: 장보기 목록 모달
     // ═══════════════════════════════════════════════════
     function ShoppingListModal({ mealPlan, period, hasChildren, onClose }) {
-      const [checked, setChecked] = useState(new Set());
-      const [copied, setCopied]   = useState(false);
+      const [checked, setChecked]   = useState(new Set());
+      const [copied, setCopied]     = useState(false);
+      const [view, setView]         = useState('category'); // 'category' | 'meal'
 
-      const { grouped, totalCount } = useMemo(() => {
+      const { grouped, totalCount, mealList, ingToMeals } = useMemo(() => {
+        // 1) 식단에 등장하는 메뉴 수집 (중복 제거)
         const mealNames = new Set();
         for (let d = 0; d < period; d++) {
           for (const mt of ['breakfast','lunch','dinner']) {
@@ -790,8 +792,17 @@
             }
           }
         }
+
+        // 2) 재료별 보기: 카테고리 그룹 + 재료→메뉴 역매핑
         const ingredients = new Set();
-        mealNames.forEach(name => (MEAL_INGREDIENTS[name] || []).forEach(i => ingredients.add(i)));
+        const ingToMeals = {};
+        mealNames.forEach(name => {
+          (MEAL_INGREDIENTS[name] || []).forEach(ing => {
+            ingredients.add(ing);
+            if (!ingToMeals[ing]) ingToMeals[ing] = [];
+            if (!ingToMeals[ing].includes(name)) ingToMeals[ing].push(name);
+          });
+        });
         const groups = {};
         ingredients.forEach(ing => {
           const cat = INGREDIENT_CATEGORY[ing] || '기타';
@@ -799,7 +810,18 @@
           groups[cat].push(ing);
         });
         CAT_ORDER.forEach(cat => { if (groups[cat]) groups[cat].sort(); });
-        return { grouped: groups, totalCount: ingredients.size };
+
+        // 3) 메뉴별 보기: 메뉴명 + 재료 목록
+        const mealList = [...mealNames]
+          .filter(name => MEAL_INGREDIENTS[name])
+          .sort()
+          .map(name => ({
+            name,
+            cuisine: [...MEALS].find(m => m.name === name)?.cuisine || 'custom',
+            ingredients: MEAL_INGREDIENTS[name] || [],
+          }));
+
+        return { grouped: groups, totalCount: ingredients.size, mealList, ingToMeals };
       }, [mealPlan, period, hasChildren]);
 
       const toggle = (item) => setChecked(prev => {
@@ -810,7 +832,7 @@
 
       const remaining = totalCount - checked.size;
 
-      const copyList = () => {
+      const copyCategory = () => {
         const lines = ['🛒 장보기 목록\n'];
         CAT_ORDER.forEach(cat => {
           const items = (grouped[cat] || []).filter(i => !checked.has(i));
@@ -825,60 +847,135 @@
         });
       };
 
+      const copyMeal = () => {
+        const lines = ['🍽️ 메뉴별 재료 목록\n'];
+        mealList.forEach(({ name, ingredients }) => {
+          lines.push(`[ ${name} ]`);
+          lines.push(`  ${ingredients.join(', ')}`);
+          lines.push('');
+        });
+        navigator.clipboard.writeText(lines.join('\n')).then(() => {
+          setCopied(true); setTimeout(() => setCopied(false), 2000);
+        });
+      };
+
       return (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-3 sm:p-6" onClick={onClose}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden slide-up" onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
             <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-lg font-bold text-gray-800">🛒 장보기 목록</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    총 {totalCount}가지 재료 · 남은 항목 <span className="text-green-600 font-bold">{remaining}개</span>
+                    {view === 'category'
+                      ? <>총 {totalCount}가지 재료 · 남은 항목 <span className="text-green-600 font-bold">{remaining}개</span></>
+                      : <>{mealList.length}가지 메뉴의 재료를 한눈에</>
+                    }
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={copyList}
+                <div className="flex gap-2 items-center">
+                  <button onClick={view === 'category' ? copyCategory : copyMeal}
                     className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${copied ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                     {copied ? '✓ 복사됨' : '📋 복사'}
                   </button>
                   <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
               </div>
+              {/* 탭 */}
+              <div className="flex gap-2">
+                {[['category','📦 재료별'],['meal','🍽️ 메뉴별']].map(([v, label]) => (
+                  <button key={v} onClick={() => setView(v)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${view === v ? 'bg-green-500 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-green-300'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="overflow-y-auto" style={{maxHeight:'65vh'}}>
+            {/* 본문 */}
+            <div className="overflow-y-auto" style={{maxHeight:'60vh'}}>
               {totalCount === 0 ? (
                 <div className="text-center py-12 text-gray-400">
                   <div className="text-3xl mb-2">🧺</div>
                   <p className="text-sm">식단에 등록된 재료가 없어요</p>
                 </div>
-              ) : (
+              ) : view === 'category' ? (
+                /* ── 재료별 탭 ── */
                 <div className="p-4 space-y-4">
                   {CAT_ORDER.filter(cat => grouped[cat]).map(cat => (
                     <div key={cat}>
                       <p className="text-xs font-bold text-gray-500 mb-2">{CAT_EMOJI[cat]} {cat}</p>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="space-y-1.5">
                         {grouped[cat].map(item => (
                           <button key={item} onClick={() => toggle(item)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm text-left transition-all ${
+                            className={`w-full flex items-start gap-2 px-3 py-2 rounded-xl border text-left transition-all ${
                               checked.has(item)
-                                ? 'bg-gray-50 border-gray-200 text-gray-300 line-through'
+                                ? 'bg-gray-50 border-gray-200 text-gray-300'
                                 : 'bg-white border-gray-200 text-gray-700 hover:border-green-300 hover:bg-green-50'
                             }`}>
-                            <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] ${checked.has(item) ? 'bg-gray-300 border-gray-300 text-white' : 'border-gray-300'}`}>
+                            <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] mt-0.5 ${checked.has(item) ? 'bg-gray-300 border-gray-300 text-white' : 'border-gray-300'}`}>
                               {checked.has(item) ? '✓' : ''}
                             </span>
-                            {item}
+                            <div className="flex-1 min-w-0">
+                              <span className={`text-sm font-medium ${checked.has(item) ? 'line-through' : ''}`}>{item}</span>
+                              {/* 이 재료가 쓰이는 메뉴 태그 */}
+                              {!checked.has(item) && ingToMeals[item] && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {ingToMeals[item].slice(0, 4).map(meal => {
+                                    const c = [...MEALS].find(m => m.name === meal)?.cuisine || 'custom';
+                                    return (
+                                      <span key={meal} className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
+                                        {meal}
+                                      </span>
+                                    );
+                                  })}
+                                  {ingToMeals[item].length > 4 && (
+                                    <span className="text-[9px] text-gray-400">+{ingToMeals[item].length - 4}</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </button>
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                /* ── 메뉴별 탭 ── */
+                <div className="p-4 space-y-3">
+                  {mealList.map(({ name, cuisine, ingredients }) => {
+                    const info = CUISINE_INFO[cuisine] || CUISINE_INFO['custom'];
+                    const allChecked = ingredients.every(i => checked.has(i));
+                    return (
+                      <div key={name} className={`rounded-xl border p-3 transition-all ${allChecked ? 'opacity-50 bg-gray-50 border-gray-200' : `${info.bg} ${info.border}`}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-base">{info.emoji}</span>
+                          <span className={`font-bold text-sm ${allChecked ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{name}</span>
+                          <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded font-medium ${info.badge}`}>{info.label}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {ingredients.map(ing => (
+                            <button key={ing} onClick={() => toggle(ing)}
+                              className={`text-xs px-2 py-1 rounded-lg border transition-all ${
+                                checked.has(ing)
+                                  ? 'bg-gray-100 border-gray-200 text-gray-400 line-through'
+                                  : 'bg-white border-gray-300 text-gray-700 hover:border-green-400 hover:bg-green-50'
+                              }`}>
+                              {checked.has(ing) ? '✓ ' : ''}{ing}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
-            {checked.size > 0 && (
+            {/* 하단 */}
+            {view === 'category' && checked.size > 0 && (
               <div className="p-3 border-t border-gray-100 bg-gray-50">
                 <button onClick={() => setChecked(new Set())}
                   className="w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors">
