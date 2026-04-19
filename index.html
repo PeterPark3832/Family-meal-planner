@@ -174,6 +174,8 @@
       return kids.length ? Math.min(...kids.map(m => parseInt(m.age) || 0)) : 99;
     };
 
+    const hasKids = (members) => members.some(m => m.type === 'child');
+
     const getPool = (mealType, cuisines, minAge, noSpicy = false) =>
       MEALS.filter(m =>
         cuisines.includes(m.cuisine) &&
@@ -191,21 +193,54 @@
       return a;
     };
 
-    function generatePlan(period, cuisines, minAge, noSpicy = false) {
+    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
-        const lookback = Math.max(0, d - 10); // 최근 10일 롤링 윈도우로 중복 방지
+        const lookback = Math.max(0, d - 10);
+
         for (const mt of ['breakfast','lunch','dinner']) {
-          const pool = getPool(mt, cuisines, minAge, noSpicy);
-          if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
-          const used = new Set();
-          for (let wd = lookback; wd < d; wd++) {
-            if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
+          if (childrenPresent) {
+            // 성인: 나이 제한 없음, 사용자 noSpicy 따름
+            const adultPool = getPool(mt, cuisines, 99, noSpicy);
+            // 아이: 나이 기반 필터 + 만 6세 이하 자동 매운 음식 제외
+            const childNoSpicy = minAge <= 6 || noSpicy;
+            const childPool = getPool(mt, cuisines, minAge, childNoSpicy);
+
+            const usedAdult = new Set(), usedChild = new Set();
+            for (let wd = lookback; wd < d; wd++) {
+              if (plan[wd]?.[mt]?.adult?.name) usedAdult.add(plan[wd][mt].adult.name);
+              if (plan[wd]?.[mt]?.child?.name) usedChild.add(plan[wd][mt].child.name);
+            }
+
+            const freshAdult = adultPool.filter(m => !usedAdult.has(m.name));
+            const chosenAdult = shuffle(freshAdult.length ? freshAdult : adultPool)[0]
+              || { name:'직접 입력', cuisine:'custom' };
+
+            // 아이 메뉴는 성인 메뉴와 다른 것 우선 배정
+            const childExcludes = new Set([...usedChild, chosenAdult.name]);
+            const freshChildDiff = childPool.filter(m => !childExcludes.has(m.name));
+            const freshChild     = childPool.filter(m => !usedChild.has(m.name));
+            const chosenChild = shuffle(
+              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool)
+            )[0] || { name:'직접 입력', cuisine:'custom' };
+
+            plan[d][mt] = {
+              adult: { name: chosenAdult.name, cuisine: chosenAdult.cuisine },
+              child: { name: chosenChild.name, cuisine: chosenChild.cuisine },
+            };
+          } else {
+            // 통합 모드 (아이 없을 때)
+            const pool = getPool(mt, cuisines, minAge, noSpicy);
+            if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
+            const used = new Set();
+            for (let wd = lookback; wd < d; wd++) {
+              if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
+            }
+            const fresh = pool.filter(m => !used.has(m.name));
+            const chosen = shuffle(fresh.length ? fresh : pool)[0];
+            plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
           }
-          const fresh = pool.filter(m => !used.has(m.name));
-          const chosen = shuffle(fresh.length ? fresh : pool)[0];
-          plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
         }
       }
       return plan;
@@ -224,9 +259,45 @@
     }
 
     // ═══════════════════════════════════════════════════
-    //  컴포넌트: 식사 셀
+    //  컴포넌트: 식사 셀 (통합 / 분리 모드 지원)
     // ═══════════════════════════════════════════════════
-    function MealCell({ meal, onClick, onRegen }) {
+
+    // 분리 모드: 한 사람의 하프-셀
+    function HalfCell({ meal, label, icon, onClick }) {
+      const info = CUISINE_INFO[meal?.cuisine || 'custom'];
+      return (
+        <div onClick={onClick}
+          className={`meal-card cursor-pointer border rounded-lg p-1.5 transition-all hover:shadow-sm ${
+            meal?.name ? `${info.border} ${info.bg}` : 'border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50'
+          }`}>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] flex-shrink-0">{icon}</span>
+            <span className="text-[11px] font-semibold text-gray-800 leading-tight truncate flex-1">
+              {meal?.name || <span className="text-gray-300">+ 추가</span>}
+            </span>
+            {meal?.name && <span className="text-xs flex-shrink-0">{info.emoji}</span>}
+          </div>
+          {meal?.note && <p className="text-[9px] text-gray-400 mt-0.5 truncate pl-4">{meal.note}</p>}
+        </div>
+      );
+    }
+
+    function MealCell({ meal, hasChildren, onClick, onClickAdult, onClickChild, onRegen }) {
+      // ── 분리 모드 (아이 있을 때) ──────────────────────
+      if (hasChildren) {
+        return (
+          <div className="cell-wrap relative space-y-1">
+            <HalfCell meal={meal?.adult} label="성인" icon="👨" onClick={onClickAdult} />
+            <HalfCell meal={meal?.child} label="아이" icon="🧒" onClick={onClickChild} />
+            <button
+              onClick={(e) => { e.stopPropagation(); onRegen('both'); }}
+              className="dice-btn absolute top-0.5 right-0.5 w-5 h-5 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-orange-50 hover:border-orange-300"
+              title="둘 다 재생성">🎲</button>
+          </div>
+        );
+      }
+
+      // ── 통합 모드 (아이 없을 때) ──────────────────────
       const info = CUISINE_INFO[meal?.cuisine || 'custom'];
       if (!meal?.name) {
         return (
@@ -253,10 +324,9 @@
             )}
           </div>
           <button
-            onClick={(e) => { e.stopPropagation(); onRegen(); }}
+            onClick={(e) => { e.stopPropagation(); onRegen('unified'); }}
             className="dice-btn absolute top-1.5 right-1.5 w-6 h-6 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs shadow-sm hover:bg-orange-50 hover:border-orange-300"
-            title="다른 메뉴로 변경"
-          >🎲</button>
+            title="다른 메뉴로 변경">🎲</button>
         </div>
       );
     }
@@ -264,20 +334,25 @@
     // ═══════════════════════════════════════════════════
     //  컴포넌트: 메뉴 수정 모달
     // ═══════════════════════════════════════════════════
-    function EditModal({ dayIdx, mealType, meal, config, minAge, onSave, onClose }) {
+    function EditModal({ dayIdx, mealType, meal, config, minAge, who, onSave, onClose }) {
       const [search, setSearch]     = useState('');
       const [tab, setTab]           = useState('suggest');
       const [customText, setCustomText] = useState(meal?.cuisine === 'custom' ? meal.name : '');
       const [note, setNote]         = useState(meal?.note || '');
       const [pendingMeal, setPending] = useState(null);
 
-      const mealLabel = MEAL_TYPES.find(m => m.id === mealType)?.label;
+      // who: 'adult' | 'child' | null(통합)
+      const whoLabel  = who === 'adult' ? ' · 성인' : who === 'child' ? ' · 아이' : '';
+      const mealLabel = (MEAL_TYPES.find(m => m.id === mealType)?.label || '') + whoLabel;
+      // 성인은 나이 제한 없음, 아이는 나이 기반 + 어릴수록 매운 음식 자동 제외
+      const effectiveMinAge   = who === 'adult' ? 99 : minAge;
+      const effectiveNoSpicy  = who === 'child' ? (minAge <= 6 || config.noSpicy) : config.noSpicy;
 
       const suggestions = useMemo(() => {
-        const pool = getPool(mealType, config.cuisines, minAge);
+        const pool = getPool(mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy);
         if (search.trim()) return pool.filter(m => m.name.includes(search.trim()));
         return shuffle(pool).slice(0, 16);
-      }, [mealType, config.cuisines, minAge, search]);
+      }, [mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy, search]);
 
       const confirmSave = (base) => onSave({ ...base, note: note.trim() });
 
@@ -395,17 +470,24 @@
     // ═══════════════════════════════════════════════════
     //  컴포넌트: 요리 분포 통계
     // ═══════════════════════════════════════════════════
-    function StatsPanel({ mealPlan, period }) {
+    function StatsPanel({ mealPlan, period, hasChildren }) {
       const counts = useMemo(() => {
         const c = { korean:0, western:0, chinese:0, japanese:0, custom:0 };
         for (let d = 0; d < period; d++) {
           for (const mt of ['breakfast','lunch','dinner']) {
-            const cuisine = mealPlan[d]?.[mt]?.cuisine;
-            if (cuisine && c[cuisine] !== undefined) c[cuisine]++;
+            const slot = mealPlan[d]?.[mt];
+            if (!slot) continue;
+            if (hasChildren) {
+              [slot.adult?.cuisine, slot.child?.cuisine].forEach(c2 => {
+                if (c2 && c[c2] !== undefined) c[c2]++;
+              });
+            } else {
+              if (slot.cuisine && c[slot.cuisine] !== undefined) c[slot.cuisine]++;
+            }
           }
         }
         return c;
-      }, [mealPlan, period]);
+      }, [mealPlan, period, hasChildren]);
 
       const total = Object.values(counts).reduce((a,b) => a+b, 0) || 1;
       const items = Object.entries(counts).filter(([,v]) => v > 0);
@@ -697,26 +779,53 @@
       const [showStats, setShowStats] = useState(false);
       const fileInputRef = React.useRef(null);
 
-      const totalWeeks = Math.ceil(config.period / 7);
-      const weekStart  = week * 7;
-      const weekEnd    = Math.min(weekStart + 7, config.period);
-      const daysInWeek = weekEnd - weekStart;
-      const minAge     = getMinAge(config.members);
-      const todayDow   = new Date().getDay(); // 0=일 → 6=토, 我们用 1=月~0=日
-      // 转换: JS getDay 0=Sun,1=Mon...6=Sat → WEEK_DAYS 0=Mon...6=Sun
-      const todayIdx   = todayDow === 0 ? 6 : todayDow - 1;
+      const totalWeeks  = Math.ceil(config.period / 7);
+      const weekStart   = week * 7;
+      const weekEnd     = Math.min(weekStart + 7, config.period);
+      const daysInWeek  = weekEnd - weekStart;
+      const minAge      = getMinAge(config.members);
+      const children    = hasKids(config.members);
+      const todayDow    = new Date().getDay();
+      const todayIdx    = todayDow === 0 ? 6 : todayDow - 1;
 
       const saveMeal = ({ name, cuisine, note }) => {
-        const { day, mt } = editTarget;
-        setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name, cuisine, note } } }));
+        const { day, mt, who } = editTarget;
+        setMealPlan(prev => {
+          const dayPlan = { ...prev[day] };
+          if (who) {
+            // 분리 모드: adult 또는 child만 업데이트
+            dayPlan[mt] = { ...(dayPlan[mt] || {}), [who]: { name, cuisine, note } };
+          } else {
+            dayPlan[mt] = { name, cuisine, note };
+          }
+          return { ...prev, [day]: dayPlan };
+        });
         setEdit(null);
       };
 
-      const regenOne = (day, mt) => {
-        const current = mealPlan[day]?.[mt]?.name;
-        const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy);
-        if (!chosen) return;
-        setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
+      const regenOne = (day, mt, mode) => {
+        if (mode === 'both') {
+          const adultCur = mealPlan[day]?.[mt]?.adult?.name;
+          const childCur = mealPlan[day]?.[mt]?.child?.name;
+          const cAdult = pickOneMeal(mt, config.cuisines, 99,    adultCur, config.noSpicy);
+          const childNoSpicy = minAge <= 6 || config.noSpicy;
+          const cChild = pickOneMeal(mt, config.cuisines, minAge, childCur, childNoSpicy);
+          setMealPlan(prev => ({
+            ...prev,
+            [day]: {
+              ...prev[day],
+              [mt]: {
+                adult: cAdult ? { name: cAdult.name, cuisine: cAdult.cuisine } : prev[day]?.[mt]?.adult,
+                child: cChild ? { name: cChild.name, cuisine: cChild.cuisine } : prev[day]?.[mt]?.child,
+              }
+            }
+          }));
+        } else {
+          const current = mealPlan[day]?.[mt]?.name;
+          const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy);
+          if (!chosen) return;
+          setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
+        }
       };
 
       const exportJSON = () => {
@@ -746,17 +855,32 @@
       };
 
       const exportText = () => {
-        const lines = [`🍽️ 우리 가족 식단표 (${config.period}일)\n`];
+        const lines = [`🍽️ 우리 가족 식단표 (${config.period}일)`];
+        if (children) lines.push('📌 [성인] / [아이] 분리 식단\n');
+        else lines.push('');
         for (let w = 0; w < totalWeeks; w++) {
-          lines.push(`\n[${w+1}주차]`);
+          lines.push(`[${w+1}주차]`);
           const wStart = w * 7, wEnd = Math.min(wStart+7, config.period);
           for (const mt of MEAL_TYPES) {
-            const row = [mt.label.padEnd(4)];
-            for (let d = wStart; d < wEnd; d++) {
-              row.push((mealPlan[d]?.[mt.id]?.name || '-').slice(0,10).padEnd(11));
+            if (children) {
+              const adultRow = [mt.label + '(성인)'];
+              const childRow = [mt.label + '(아이) '];
+              for (let d = wStart; d < wEnd; d++) {
+                const slot = mealPlan[d]?.[mt.id];
+                adultRow.push((slot?.adult?.name || '-').slice(0,10).padEnd(11));
+                childRow.push((slot?.child?.name || '-').slice(0,10).padEnd(11));
+              }
+              lines.push(adultRow.join(' '));
+              lines.push(childRow.join(' '));
+            } else {
+              const row = [mt.label.padEnd(6)];
+              for (let d = wStart; d < wEnd; d++) {
+                row.push((mealPlan[d]?.[mt.id]?.name || '-').slice(0,10).padEnd(11));
+              }
+              lines.push(row.join(' '));
             }
-            lines.push(row.join(' '));
           }
+          lines.push('');
         }
         navigator.clipboard.writeText(lines.join('\n')).then(() => {
           setCopied(true);
@@ -811,7 +935,7 @@
           </div>
 
           {/* 통계 패널 */}
-          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} /></div>}
+          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} /></div>}
 
           {/* 주차 탭 */}
           {totalWeeks > 1 && (
@@ -860,8 +984,11 @@
                         <div key={i} className={`p-1.5 border-b border-l border-gray-100 ${isToday ? 'today-col' : ''}`}>
                           <MealCell
                             meal={meal}
-                            onClick={() => setEdit({ day:di, mt:mt.id })}
-                            onRegen={() => regenOne(di, mt.id)}
+                            hasChildren={children}
+                            onClick={children ? undefined : () => setEdit({ day:di, mt:mt.id, who:null })}
+                            onClickAdult={children ? () => setEdit({ day:di, mt:mt.id, who:'adult' }) : undefined}
+                            onClickChild={children ? () => setEdit({ day:di, mt:mt.id, who:'child' }) : undefined}
+                            onRegen={(mode) => regenOne(di, mt.id, mode)}
                           />
                         </div>
                       );
@@ -898,9 +1025,14 @@
             <EditModal
               dayIdx={editTarget.day}
               mealType={editTarget.mt}
-              meal={mealPlan[editTarget.day]?.[editTarget.mt]}
+              meal={
+                editTarget.who
+                  ? mealPlan[editTarget.day]?.[editTarget.mt]?.[editTarget.who]
+                  : mealPlan[editTarget.day]?.[editTarget.mt]
+              }
               config={config}
               minAge={minAge}
+              who={editTarget.who}
               onSave={saveMeal}
               onClose={() => setEdit(null)}
             />
@@ -946,16 +1078,18 @@
         if (existingPlan) {
           setMealPlan(existingPlan);
         } else {
-          const minAge = getMinAge(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy));
+          const minAge    = getMinAge(cfgOrConfig.members);
+          const children  = hasKids(cfgOrConfig.members);
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children));
         }
         setScreen('plan');
       }, []);
 
       const handleRegen = useCallback(() => {
         if (!config) return;
-        const minAge = getMinAge(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy));
+        const minAge   = getMinAge(config.members);
+        const children = hasKids(config.members);
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children));
       }, [config]);
 
       const handleImport = useCallback((cfg, plan) => {
