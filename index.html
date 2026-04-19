@@ -26,6 +26,7 @@
     @keyframes fadeIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
     @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .no-print { display: none !important; }
       body { background: white !important; }
       .print-wrap { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
@@ -173,8 +174,13 @@
       return kids.length ? Math.min(...kids.map(m => parseInt(m.age) || 0)) : 99;
     };
 
-    const getPool = (mealType, cuisines, minAge) =>
-      MEALS.filter(m => cuisines.includes(m.cuisine) && m.types.includes(mealType) && m.minAge <= minAge);
+    const getPool = (mealType, cuisines, minAge, noSpicy = false) =>
+      MEALS.filter(m =>
+        cuisines.includes(m.cuisine) &&
+        m.types.includes(mealType) &&
+        m.minAge <= minAge &&
+        (!noSpicy || !m.spicy)
+      );
 
     const shuffle = (arr) => {
       const a = [...arr];
@@ -185,16 +191,16 @@
       return a;
     };
 
-    function generatePlan(period, cuisines, minAge) {
+    function generatePlan(period, cuisines, minAge, noSpicy = false) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
-        const weekStart = Math.floor(d / 7) * 7;
+        const lookback = Math.max(0, d - 10); // 최근 10일 롤링 윈도우로 중복 방지
         for (const mt of ['breakfast','lunch','dinner']) {
-          const pool = getPool(mt, cuisines, minAge);
+          const pool = getPool(mt, cuisines, minAge, noSpicy);
           if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
           const used = new Set();
-          for (let wd = weekStart; wd < d; wd++) {
+          for (let wd = lookback; wd < d; wd++) {
             if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
           }
           const fresh = pool.filter(m => !used.has(m.name));
@@ -205,8 +211,8 @@
       return plan;
     }
 
-    function pickOneMeal(mealType, cuisines, minAge, excludeName) {
-      const pool = getPool(mealType, cuisines, minAge).filter(m => m.name !== excludeName);
+    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false) {
+      const pool = getPool(mealType, cuisines, minAge, noSpicy).filter(m => m.name !== excludeName);
       if (!pool.length) return null;
       return shuffle(pool)[0];
     }
@@ -553,7 +559,7 @@
       );
     }
 
-    function StepCuisine({ cuisines, setCuisines }) {
+    function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy }) {
       const toggle = (c) => setCuisines(prev =>
         prev.includes(c) ? (prev.length>1 ? prev.filter(x=>x!==c) : prev) : [...prev, c]
       );
@@ -583,6 +589,22 @@
             })}
           </div>
           <p className="text-xs text-gray-400 mt-4 text-center">* 최소 1개 이상 선택해야 합니다</p>
+
+          {/* 매운 음식 제외 토글 */}
+          <button
+            onClick={() => setNoSpicy(v => !v)}
+            className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${noSpicy ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🌶️</span>
+              <div className="text-left">
+                <div className={`font-bold text-sm ${noSpicy ? 'text-rose-600' : 'text-gray-700'}`}>매운 음식 제외</div>
+                <div className="text-xs text-gray-400 mt-0.5">제육볶음, 김치찌개, 짬뽕 등 🌶️ 음식을 추천에서 뺍니다</div>
+              </div>
+            </div>
+            <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${noSpicy ? 'bg-rose-500' : 'bg-gray-200'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${noSpicy ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+            </div>
+          </button>
         </div>
       );
     }
@@ -599,6 +621,7 @@
       const [period, setPeriod]     = useState(7);
       const [custom, setCustom]     = useState('');
       const [cuisines, setCuisines] = useState(['korean']);
+      const [noSpicy, setNoSpicy]   = useState(false);
       const [restoreData, setRestoreData] = useState(restore || null);
 
       const finalPeriod = custom !== '' ? (parseInt(custom)||7) : period;
@@ -640,7 +663,7 @@
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
             {step === 1 && <StepFamily members={members} setMembers={setMembers} />}
             {step === 2 && <StepPeriod period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />}
-            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} />}
+            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} />}
 
             <div className="flex justify-between mt-8">
               <button onClick={() => setStep(s => s-1)} disabled={step===1}
@@ -653,7 +676,7 @@
                   다음 →
                 </button>
               ) : (
-                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines })}
+                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy })}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:from-orange-600 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
                   식단 생성 🎉
                 </button>
@@ -667,11 +690,12 @@
     // ═══════════════════════════════════════════════════
     //  식단표 화면
     // ═══════════════════════════════════════════════════
-    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen }) {
+    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport }) {
       const [week, setWeek]       = useState(0);
       const [editTarget, setEdit] = useState(null);
       const [copied, setCopied]   = useState(false);
       const [showStats, setShowStats] = useState(false);
+      const fileInputRef = React.useRef(null);
 
       const totalWeeks = Math.ceil(config.period / 7);
       const weekStart  = week * 7;
@@ -690,9 +714,35 @@
 
       const regenOne = (day, mt) => {
         const current = mealPlan[day]?.[mt]?.name;
-        const chosen  = pickOneMeal(mt, config.cuisines, minAge, current);
+        const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy);
         if (!chosen) return;
         setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
+      };
+
+      const exportJSON = () => {
+        const payload = JSON.stringify({ config, mealPlan, exportedAt: Date.now() }, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `식단플래너_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const importJSON = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (data?.config && data?.mealPlan) onImport(data.config, data.mealPlan);
+            else alert('올바른 식단 플래너 백업 파일이 아닙니다.');
+          } catch { alert('파일을 읽을 수 없습니다.'); }
+          e.target.value = '';
+        };
+        reader.readAsText(file);
       };
 
       const exportText = () => {
@@ -740,6 +790,15 @@
                 className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 {copied ? '✓ 복사됨!' : '📋 텍스트 복사'}
               </button>
+              <button onClick={exportJSON}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                💾 JSON 저장
+              </button>
+              <button onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                📂 불러오기
+              </button>
+              <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
               <button onClick={onRegen}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
                 🔄 전체 재생성
@@ -883,13 +942,12 @@
       }, [mealPlan, screen, config]);
 
       const handleComplete = useCallback((cfgOrConfig, existingPlan) => {
-        // cfgOrConfig는 새 설정 or 복원 시 config 객체
         setConfig(cfgOrConfig);
         if (existingPlan) {
           setMealPlan(existingPlan);
         } else {
           const minAge = getMinAge(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge));
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy));
         }
         setScreen('plan');
       }, []);
@@ -897,8 +955,13 @@
       const handleRegen = useCallback(() => {
         if (!config) return;
         const minAge = getMinAge(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge));
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy));
       }, [config]);
+
+      const handleImport = useCallback((cfg, plan) => {
+        setConfig(cfg);
+        setMealPlan(plan);
+      }, []);
 
       if (screen === 'plan') {
         return (
@@ -909,6 +972,7 @@
             savedAt={savedAt}
             onBack={() => setScreen('setup')}
             onRegen={handleRegen}
+            onImport={handleImport}
           />
         );
       }
