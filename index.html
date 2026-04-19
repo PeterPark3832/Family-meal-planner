@@ -2365,5 +2365,21 @@
       });
     }
   </script>
+
+  <script>
+    // iframe 임베드 시 부모 페이지에 높이 전달 (티스토리 등)
+    (function() {
+      if (window.parent === window) return;
+      function sendHeight() {
+        var h = document.getElementById('root')?.scrollHeight || document.body.scrollHeight;
+        window.parent.postMessage({ type: 'fmp-resize', height: h + 32 }, '*');
+      }
+      if (typeof ResizeObserver !== 'undefined') {
+        var ro = new ResizeObserver(sendHeight);
+        ro.observe(document.getElementById('root') || document.body);
+      }
+      window.addEventListener('load', sendHeight);
+    })();
+  </script>
 </body>
 </html>
