@@ -19,9 +19,20 @@
     * { font-family: 'Noto Sans KR', sans-serif; box-sizing: border-box; }
     .meal-card { transition: all 0.15s ease; }
     .meal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.13); }
-    .dice-btn { opacity: 0; transition: opacity 0.15s; }
-    .cell-wrap:hover .dice-btn { opacity: 1; }
-    .week-scroll { overflow-x: auto; }
+    .meal-card:active { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.10); }
+
+    /* 호버 지원 기기(마우스): dice-btn 숨김 → hover 시 표시 */
+    @media (hover: hover) {
+      .dice-btn { opacity: 0; transition: opacity 0.15s; }
+      .cell-wrap:hover .dice-btn { opacity: 1; }
+    }
+    /* 터치 기기: dice-btn 항상 표시 */
+    @media (hover: none) {
+      .dice-btn { opacity: 1; }
+      .meal-card:hover { transform: none; box-shadow: none; }
+    }
+
+    .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .week-scroll::-webkit-scrollbar { height: 5px; }
     .week-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .fade-in  { animation: fadeIn 0.22s ease; }
@@ -38,6 +49,10 @@
     .print-title { display: none; }
     .today-col { background: linear-gradient(to bottom, #fff7ed, #fff) !important; }
     .today-header { color: #ea580c !important; }
+    /* 모바일 터치 타겟 최소 크기 보장 */
+    @media (max-width: 640px) {
+      .touch-target { min-width: 36px; min-height: 36px; }
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 min-h-screen">
@@ -558,13 +573,13 @@
           {meal?.name && (
             <>
               <button onClick={e => { e.stopPropagation(); onRecipe?.(meal.name, meal.cuisine); }}
-                className="dice-btn absolute top-0.5 left-0.5 w-4 h-4 bg-white border border-gray-200 rounded flex items-center justify-center text-[8px] shadow-sm hover:bg-red-50 hover:border-red-300"
+                className="dice-btn absolute top-0.5 left-0.5 w-5 h-5 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-red-50 hover:border-red-300"
                 title="레시피 검색">📺</button>
               <div className="dice-btn absolute bottom-0.5 right-0.5 flex gap-0.5">
                 <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
-                  className={`w-4 h-4 bg-white border rounded flex items-center justify-center text-[8px] shadow-sm hover:bg-green-50 hover:border-green-300 ${score > 0 ? 'border-green-300' : 'border-gray-200'}`}>👍</button>
+                  className={`w-5 h-5 bg-white border rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-green-50 hover:border-green-300 ${score > 0 ? 'border-green-300' : 'border-gray-200'}`}>👍</button>
                 <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
-                  className={`w-4 h-4 bg-white border rounded flex items-center justify-center text-[8px] shadow-sm hover:bg-red-50 hover:border-red-300 ${score < 0 ? 'border-red-300' : 'border-gray-200'}`}>👎</button>
+                  className={`w-5 h-5 bg-white border rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-red-50 hover:border-red-300 ${score < 0 ? 'border-red-300' : 'border-gray-200'}`}>👎</button>
               </div>
             </>
           )}
@@ -713,13 +728,13 @@
             </div>
 
             {/* 본문 */}
-            <div className="overflow-y-auto" style={{maxHeight:'52vh'}}>
+            <div className="overflow-y-auto" style={{maxHeight:'45svh'}}>
               {tab === 'suggest' ? (
                 <div className="p-4">
                   <div className="relative mb-3">
                     <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
                     <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                      placeholder="메뉴 검색..." autoFocus
+                      placeholder="메뉴 검색..." autoFocus={window.innerWidth > 640}
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm pl-9 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
                   </div>
                   {suggestions.length === 0 ? (
@@ -758,7 +773,7 @@
                       onKeyDown={e => { if(e.key==='Enter' && customText.trim()) confirmSave({name:customText.trim(), cuisine:'custom'}); }}
                       placeholder="예) 엄마표 불고기, 오늘의 도시락..."
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      autoFocus />
+                      autoFocus={window.innerWidth > 640} />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1.5">메모 <span className="font-normal text-gray-400">(선택)</span></label>
@@ -824,7 +839,7 @@
                     <input type="text" value={note} onChange={e => setNote(e.target.value)}
                       onKeyDown={e => { if(e.key==='Enter') confirmSave(pendingMeal); }}
                       placeholder="재료, 소스, 주의사항 등..."
-                      autoFocus
+                      autoFocus={window.innerWidth > 640}
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
                   </div>
                   <div className="flex gap-2">
@@ -895,7 +910,7 @@
                 <input type="text" value={name} onChange={e => setName(e.target.value)}
                   onKeyDown={e => { if(e.key==='Enter' && name.trim()) handleAdd(); }}
                   placeholder="예) 엄마표 불고기, 특제 된장찌개..."
-                  autoFocus
+                  autoFocus={window.innerWidth > 640}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 mb-3" />
                 <div className="flex gap-2 mb-3">
                   {MEAL_TYPES.map(mt => (
@@ -1984,51 +1999,50 @@
                 <h1 className="text-lg font-black text-gray-800">우리 가족 식단표</h1>
                 <p className="text-xs text-gray-400">
                   {config.members.length}인 가족 · {config.period}일 플랜 · {config.cuisines.map(c => CUISINE_INFO[c].label).join(' / ')}
-                  {savedAt && <span className="ml-2 text-gray-300">· 저장 {formatTime(savedAt)}</span>}
+                  {savedAt && <span className="ml-2 text-gray-300 hidden sm:inline">· 저장 {formatTime(savedAt)}</span>}
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <button onClick={() => setShowStats(s => !s)}
-                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${showStats ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                📊 통계
+            <div className="flex gap-1.5 flex-wrap items-center">
+              <button onClick={() => setShowStats(s => !s)} title="통계"
+                className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${showStats ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                📊<span className="hidden sm:inline ml-1">통계</span>
               </button>
-              <button onClick={() => setShowCustomDB(true)}
-                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                ⭐ 내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}
+              <button onClick={() => setShowCustomDB(true)} title="내 메뉴"
+                className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                ⭐<span className="hidden sm:inline ml-1">내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
               </button>
-              <button onClick={() => setShowShopping(true)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-                🛒 장보기
+              <button onClick={() => setShowShopping(true)} title="장보기"
+                className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
+                🛒<span className="hidden sm:inline ml-1">장보기</span>
               </button>
-              <button onClick={() => setShowTemplate(true)}
-                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${templates.length > 0 ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                📋 템플릿{templates.length > 0 ? ` (${templates.length})` : ''}
+              <button onClick={() => setShowTemplate(true)} title="템플릿"
+                className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${templates.length > 0 ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                📋<span className="hidden sm:inline ml-1">템플릿{templates.length > 0 ? ` (${templates.length})` : ''}</span>
               </button>
-              <button onClick={exportText}
-                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                {copied ? '✓ 복사됨!' : '📋 텍스트 복사'}
+              <button onClick={onRegen} title="전체 재생성"
+                className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
+                🔄<span className="hidden sm:inline ml-1">재생성</span>
               </button>
-              <button onClick={exportJSON}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-                💾 JSON 저장
+              <button onClick={exportText} title="텍스트 복사"
+                className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                {copied ? '✓' : '📋'}<span className="hidden sm:inline ml-1">{copied ? '복사됨!' : '복사'}</span>
               </button>
-              <button onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-                📂 불러오기
+              <button onClick={exportJSON} title="JSON 저장"
+                className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                💾<span className="hidden sm:inline ml-1">백업</span>
+              </button>
+              <button onClick={() => fileInputRef.current?.click()} title="백업 불러오기"
+                className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                📂<span className="hidden sm:inline ml-1">불러오기</span>
               </button>
               <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
-              <button onClick={onRegen}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-                🔄 전체 재생성
+              <button onClick={() => window.print()} title="인쇄"
+                className="hidden sm:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
+                🖨️<span className="hidden sm:inline ml-1">인쇄</span>
               </button>
-              <button onClick={() => window.print()}
-                className="px-3 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
-                🖨️ 인쇄
-              </button>
-              <button onClick={onHelp}
-                className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all flex items-center justify-center"
-                title="사용 가이드">?</button>
+              <button onClick={onHelp} title="사용 가이드"
+                className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all flex items-center justify-center touch-target">?</button>
             </div>
           </div>
 
@@ -2050,7 +2064,7 @@
           {/* 식단 그리드 */}
           <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
             <div className="week-scroll">
-              <div style={{display:'grid', gridTemplateColumns:`72px repeat(${daysInWeek}, minmax(110px,1fr))`}}>
+              <div style={{display:'grid', gridTemplateColumns:`60px repeat(${daysInWeek}, minmax(90px,1fr))`}}>
                 {/* 코너 */}
                 <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
                 {/* 날짜 헤더 */}
