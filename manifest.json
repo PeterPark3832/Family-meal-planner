@@ -1,0 +1,27 @@
+{
+  "name": "우리 가족 식단 플래너",
+  "short_name": "식단 플래너",
+  "description": "가족 맞춤형 식단을 자동으로 추천해주는 앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7ed",
+  "theme_color": "#f97316",
+  "lang": "ko",
+  "orientation": "any",
+  "categories": ["lifestyle", "food"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

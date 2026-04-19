@@ -6,6 +6,9 @@
   <meta name="description" content="가족 구성원에 맞는 맞춤형 주간·월간 식단을 자동으로 추천해주는 플래너" />
   <title>🍽️ 우리 가족 식단 플래너</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <meta name="theme-color" content="#f97316" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -46,7 +49,8 @@
     // ═══════════════════════════════════════════════════
     //  상수
     // ═══════════════════════════════════════════════════
-    const SAVE_KEY = 'fmp_v2';
+    const SAVE_KEY   = 'fmp_v2';
+    const CUSTOM_KEY = 'fmp_custom_meals';
 
     const MEALS = [
       // 한식 아침
@@ -176,13 +180,15 @@
 
     const hasKids = (members) => members.some(m => m.type === 'child');
 
-    const getPool = (mealType, cuisines, minAge, noSpicy = false) =>
-      MEALS.filter(m =>
-        cuisines.includes(m.cuisine) &&
+    const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = []) => {
+      const all = [...MEALS, ...customMeals];
+      return all.filter(m =>
+        (m.isUserCustom || cuisines.includes(m.cuisine)) &&
         m.types.includes(mealType) &&
         m.minAge <= minAge &&
         (!noSpicy || !m.spicy)
       );
+    };
 
     const shuffle = (arr) => {
       const a = [...arr];
@@ -193,7 +199,7 @@
       return a;
     };
 
-    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false) {
+    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = []) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
@@ -202,10 +208,10 @@
         for (const mt of ['breakfast','lunch','dinner']) {
           if (childrenPresent) {
             // 성인: 나이 제한 없음, 사용자 noSpicy 따름
-            const adultPool = getPool(mt, cuisines, 99, noSpicy);
+            const adultPool = getPool(mt, cuisines, 99, noSpicy, customMeals);
             // 아이: 나이 기반 필터 + 만 6세 이하 자동 매운 음식 제외
             const childNoSpicy = minAge <= 6 || noSpicy;
-            const childPool = getPool(mt, cuisines, minAge, childNoSpicy);
+            const childPool = getPool(mt, cuisines, minAge, childNoSpicy, customMeals);
 
             const usedAdult = new Set(), usedChild = new Set();
             for (let wd = lookback; wd < d; wd++) {
@@ -231,7 +237,7 @@
             };
           } else {
             // 통합 모드 (아이 없을 때)
-            const pool = getPool(mt, cuisines, minAge, noSpicy);
+            const pool = getPool(mt, cuisines, minAge, noSpicy, customMeals);
             if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
             const used = new Set();
             for (let wd = lookback; wd < d; wd++) {
@@ -246,8 +252,8 @@
       return plan;
     }
 
-    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false) {
-      const pool = getPool(mealType, cuisines, minAge, noSpicy).filter(m => m.name !== excludeName);
+    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false, customMeals = []) {
+      const pool = getPool(mealType, cuisines, minAge, noSpicy, customMeals).filter(m => m.name !== excludeName);
       if (!pool.length) return null;
       return shuffle(pool)[0];
     }
@@ -334,12 +340,16 @@
     // ═══════════════════════════════════════════════════
     //  컴포넌트: 메뉴 수정 모달
     // ═══════════════════════════════════════════════════
-    function EditModal({ dayIdx, mealType, meal, config, minAge, who, onSave, onClose }) {
+    function EditModal({ dayIdx, mealType, meal, config, minAge, who, onSave, onClose, customMeals = [], onAddCustomMeal }) {
       const [search, setSearch]     = useState('');
       const [tab, setTab]           = useState('suggest');
-      const [customText, setCustomText] = useState(meal?.cuisine === 'custom' ? meal.name : '');
+      const [customText, setCustomText] = useState(meal?.cuisine === 'custom' && !meal.isUserCustom ? meal.name : '');
       const [note, setNote]         = useState(meal?.note || '');
       const [pendingMeal, setPending] = useState(null);
+      const [saveToDb, setSaveToDb] = useState(false);
+      const [dbTypes, setDbTypes]   = useState([mealType]);
+      const [dbMinAge, setDbMinAge] = useState(0);
+      const [dbSpicy, setDbSpicy]   = useState(false);
 
       // who: 'adult' | 'child' | null(통합)
       const whoLabel  = who === 'adult' ? ' · 성인' : who === 'child' ? ' · 아이' : '';
@@ -348,13 +358,41 @@
       const effectiveMinAge   = who === 'adult' ? 99 : minAge;
       const effectiveNoSpicy  = who === 'child' ? (minAge <= 6 || config.noSpicy) : config.noSpicy;
 
-      const suggestions = useMemo(() => {
-        const pool = getPool(mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy);
-        if (search.trim()) return pool.filter(m => m.name.includes(search.trim()));
-        return shuffle(pool).slice(0, 16);
-      }, [mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy, search]);
+      const toggleDbType = (t) => setDbTypes(prev =>
+        prev.includes(t) ? (prev.length > 1 ? prev.filter(x => x !== t) : prev) : [...prev, t]
+      );
 
-      const confirmSave = (base) => onSave({ ...base, note: note.trim() });
+      const suggestions = useMemo(() => {
+        const regularPool = getPool(mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy, []);
+        const userPool = customMeals.filter(m =>
+          m.types.includes(mealType) &&
+          m.minAge <= effectiveMinAge &&
+          (!effectiveNoSpicy || !m.spicy)
+        );
+        if (search.trim()) {
+          const q = search.trim();
+          return [
+            ...userPool.filter(m => m.name.includes(q)),
+            ...regularPool.filter(m => m.name.includes(q)),
+          ];
+        }
+        return [...userPool, ...shuffle(regularPool).slice(0, Math.max(4, 16 - userPool.length))];
+      }, [mealType, config.cuisines, effectiveMinAge, effectiveNoSpicy, search, customMeals]);
+
+      const confirmSave = (base) => {
+        if (saveToDb && base.name && onAddCustomMeal) {
+          onAddCustomMeal({
+            id: 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+            name: base.name,
+            cuisine: 'custom',
+            types: dbTypes,
+            minAge: dbMinAge,
+            spicy: dbSpicy,
+            isUserCustom: true,
+          });
+        }
+        onSave({ ...base, note: note.trim() });
+      };
 
       return (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-3 sm:p-6" onClick={onClose}>
@@ -395,18 +433,24 @@
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
-                      {suggestions.map(m => (
-                        <button key={m.id}
-                          onClick={() => { setPending({name:m.name, cuisine:m.cuisine}); setTab('note'); }}
-                          className={`p-3 rounded-xl border text-left transition-all hover:shadow-md active:scale-95 ${CUISINE_INFO[m.cuisine].bg} ${CUISINE_INFO[m.cuisine].border} ${pendingMeal?.name===m.name ? 'ring-2 ring-orange-400' : ''}`}>
-                          <div className="text-sm font-medium text-gray-800 leading-tight">{m.name}</div>
-                          <div className="flex items-center gap-1 mt-1.5">
-                            <span className="text-xs">{CUISINE_INFO[m.cuisine].emoji}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${CUISINE_INFO[m.cuisine].badge}`}>{CUISINE_INFO[m.cuisine].label}</span>
-                            {m.spicy && <span className="text-[10px]">🌶️</span>}
-                          </div>
-                        </button>
-                      ))}
+                      {suggestions.map((m, idx) => {
+                        const info = CUISINE_INFO[m.isUserCustom ? 'custom' : m.cuisine] || CUISINE_INFO['custom'];
+                        return (
+                          <button key={m.id || idx}
+                            onClick={() => { setPending({name:m.name, cuisine:m.isUserCustom?'custom':m.cuisine}); setTab('note'); }}
+                            className={`p-3 rounded-xl border text-left transition-all hover:shadow-md active:scale-95 ${m.isUserCustom ? 'bg-yellow-50 border-yellow-300' : info.bg + ' ' + info.border} ${pendingMeal?.name===m.name ? 'ring-2 ring-orange-400' : ''}`}>
+                            <div className="flex items-center gap-1">
+                              {m.isUserCustom && <span className="text-[10px] text-yellow-500">⭐</span>}
+                              <span className="text-sm font-medium text-gray-800 leading-tight">{m.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1.5">
+                              <span className="text-xs">{m.isUserCustom ? '⭐' : info.emoji}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${m.isUserCustom ? 'bg-yellow-100 text-yellow-700' : info.badge}`}>{m.isUserCustom ? '내 메뉴' : info.label}</span>
+                              {m.spicy && <span className="text-[10px]">🌶️</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -426,6 +470,44 @@
                       placeholder="재료, 주의사항 등..."
                       className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
                   </div>
+                  {/* DB 저장 토글 */}
+                  <button onClick={() => setSaveToDb(v => !v)}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${saveToDb ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">⭐</span>
+                      <div className="text-left">
+                        <div className={`text-sm font-bold ${saveToDb ? 'text-yellow-700' : 'text-gray-600'}`}>내 메뉴 DB에 저장</div>
+                        <div className="text-[10px] text-gray-400">추천 목록에 항상 표시됩니다</div>
+                      </div>
+                    </div>
+                    <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${saveToDb ? 'bg-yellow-400' : 'bg-gray-200'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow-sm mt-0.5 transition-all ${saveToDb ? 'ml-4' : 'ml-0.5'}`} />
+                    </div>
+                  </button>
+                  {saveToDb && (
+                    <div className="p-3 bg-yellow-50 rounded-xl border border-yellow-200 space-y-2">
+                      <div className="flex gap-1.5">
+                        {MEAL_TYPES.map(mt => (
+                          <button key={mt.id} onClick={() => toggleDbType(mt.id)}
+                            className={`px-2 py-1 rounded-lg text-xs font-medium border transition-all ${dbTypes.includes(mt.id) ? 'bg-yellow-500 text-white border-yellow-500' : 'bg-white text-gray-500 border-gray-200'}`}>
+                            {mt.emoji} {mt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-gray-500">최소 나이</span>
+                          <input type="number" value={dbMinAge} onChange={e => setDbMinAge(parseInt(e.target.value)||0)} min="0" max="18"
+                            className="w-12 border border-gray-200 rounded-lg px-1.5 py-1 text-xs text-center" />
+                          <span className="text-xs text-gray-400">세+</span>
+                        </div>
+                        <button onClick={() => setDbSpicy(v => !v)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium transition-all ${dbSpicy ? 'bg-rose-50 border-rose-300 text-rose-600' : 'bg-white border-gray-200 text-gray-500'}`}>
+                          🌶️ {dbSpicy ? '매운 음식' : '안 매운 음식'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <button onClick={() => customText.trim() && confirmSave({name:customText.trim(), cuisine:'custom'})}
                     disabled={!customText.trim()}
                     className="w-full py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-40 hover:bg-orange-600 transition-all shadow-sm">
@@ -461,6 +543,119 @@
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 내 메뉴 DB 관리 모달
+    // ═══════════════════════════════════════════════════
+    function CustomMealsModal({ customMeals, onAdd, onDelete, onClose }) {
+      const [name, setName]     = useState('');
+      const [types, setTypes]   = useState(['lunch','dinner']);
+      const [minAge, setMinAge] = useState(0);
+      const [spicy, setSpicy]   = useState(false);
+
+      const toggleType = (t) => setTypes(prev =>
+        prev.includes(t) ? (prev.length > 1 ? prev.filter(x => x !== t) : prev) : [...prev, t]
+      );
+
+      const handleAdd = () => {
+        if (!name.trim()) return;
+        onAdd({
+          id: 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          name: name.trim(),
+          cuisine: 'custom',
+          types,
+          minAge,
+          spicy,
+          isUserCustom: true,
+        });
+        setName('');
+        setTypes(['lunch','dinner']);
+        setMinAge(0);
+        setSpicy(false);
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-3 sm:p-6" onClick={onClose}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden slide-up" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-amber-50">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">⭐ 내 메뉴 DB</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">자주 만드는 메뉴를 저장하면 추천 목록에 항상 표시됩니다</p>
+                </div>
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto" style={{maxHeight:'65vh'}}>
+              {/* 새 메뉴 추가 폼 */}
+              <div className="p-4 border-b border-gray-100 bg-gray-50">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">메뉴 이름</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)}
+                  onKeyDown={e => { if(e.key==='Enter' && name.trim()) handleAdd(); }}
+                  placeholder="예) 엄마표 불고기, 특제 된장찌개..."
+                  autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 mb-3" />
+                <div className="flex gap-2 mb-3">
+                  {MEAL_TYPES.map(mt => (
+                    <button key={mt.id} onClick={() => toggleType(mt.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${types.includes(mt.id) ? 'bg-yellow-500 text-white border-yellow-500' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>
+                      {mt.emoji} {mt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-gray-500">최소 나이</span>
+                    <input type="number" value={minAge} onChange={e => setMinAge(parseInt(e.target.value)||0)} min="0" max="18"
+                      className="w-14 border border-gray-200 rounded-lg px-2 py-1 text-xs text-center" />
+                    <span className="text-xs text-gray-400">세 이상</span>
+                  </div>
+                  <button onClick={() => setSpicy(v => !v)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all ${spicy ? 'bg-rose-50 border-rose-300 text-rose-600' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                    🌶️ {spicy ? '매운 음식' : '안 매운 음식'}
+                  </button>
+                </div>
+                <button onClick={handleAdd} disabled={!name.trim()}
+                  className="mt-3 w-full py-2.5 bg-yellow-500 text-white rounded-xl text-sm font-bold disabled:opacity-40 hover:bg-yellow-600 transition-all shadow-sm">
+                  + 추가하기
+                </button>
+              </div>
+
+              {/* 저장된 메뉴 목록 */}
+              <div className="p-4">
+                <p className="text-xs font-semibold text-gray-400 mb-3">저장된 메뉴 ({customMeals.length}개)</p>
+                {customMeals.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <div className="text-3xl mb-2">📭</div>
+                    <p className="text-sm">아직 저장된 메뉴가 없어요</p>
+                    <p className="text-xs mt-1">위에서 메뉴를 추가해 보세요</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {customMeals.map(m => (
+                      <div key={m.id} className="flex items-center gap-2 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                        <span className="text-sm flex-1 font-medium text-gray-800">{m.name}</span>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {m.types.map(t => (
+                            <span key={t} className="text-[10px] px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded font-medium">
+                              {MEAL_TYPES.find(x => x.id===t)?.label}
+                            </span>
+                          ))}
+                        </div>
+                        {m.spicy && <span className="text-xs flex-shrink-0">🌶️</span>}
+                        <button onClick={() => onDelete(m.id)}
+                          className="text-gray-300 hover:text-red-400 transition-colors text-base flex-shrink-0 ml-1">🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -772,11 +967,12 @@
     // ═══════════════════════════════════════════════════
     //  식단표 화면
     // ═══════════════════════════════════════════════════
-    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport }) {
-      const [week, setWeek]       = useState(0);
-      const [editTarget, setEdit] = useState(null);
-      const [copied, setCopied]   = useState(false);
-      const [showStats, setShowStats] = useState(false);
+    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport, customMeals = [], onAddCustomMeal, onDeleteCustomMeal }) {
+      const [week, setWeek]         = useState(0);
+      const [editTarget, setEdit]   = useState(null);
+      const [copied, setCopied]     = useState(false);
+      const [showStats, setShowStats]   = useState(false);
+      const [showCustomDB, setShowCustomDB] = useState(false);
       const fileInputRef = React.useRef(null);
 
       const totalWeeks  = Math.ceil(config.period / 7);
@@ -807,9 +1003,9 @@
         if (mode === 'both') {
           const adultCur = mealPlan[day]?.[mt]?.adult?.name;
           const childCur = mealPlan[day]?.[mt]?.child?.name;
-          const cAdult = pickOneMeal(mt, config.cuisines, 99,    adultCur, config.noSpicy);
+          const cAdult = pickOneMeal(mt, config.cuisines, 99,    adultCur, config.noSpicy, customMeals);
           const childNoSpicy = minAge <= 6 || config.noSpicy;
-          const cChild = pickOneMeal(mt, config.cuisines, minAge, childCur, childNoSpicy);
+          const cChild = pickOneMeal(mt, config.cuisines, minAge, childCur, childNoSpicy, customMeals);
           setMealPlan(prev => ({
             ...prev,
             [day]: {
@@ -822,7 +1018,7 @@
           }));
         } else {
           const current = mealPlan[day]?.[mt]?.name;
-          const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy);
+          const chosen  = pickOneMeal(mt, config.cuisines, minAge, current, config.noSpicy, customMeals);
           if (!chosen) return;
           setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
         }
@@ -909,6 +1105,10 @@
               <button onClick={() => setShowStats(s => !s)}
                 className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${showStats ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 📊 통계
+              </button>
+              <button onClick={() => setShowCustomDB(true)}
+                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                ⭐ 내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}
               </button>
               <button onClick={exportText}
                 className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
@@ -1035,6 +1235,18 @@
               who={editTarget.who}
               onSave={saveMeal}
               onClose={() => setEdit(null)}
+              customMeals={customMeals}
+              onAddCustomMeal={onAddCustomMeal}
+            />
+          )}
+
+          {/* 내 메뉴 DB 모달 */}
+          {showCustomDB && (
+            <CustomMealsModal
+              customMeals={customMeals}
+              onAdd={onAddCustomMeal}
+              onDelete={onDeleteCustomMeal}
+              onClose={() => setShowCustomDB(false)}
             />
           )}
         </div>
@@ -1045,11 +1257,12 @@
     //  최상위 App
     // ═══════════════════════════════════════════════════
     function App() {
-      const [screen, setScreen]     = useState('setup');
-      const [config, setConfig]     = useState(null);
-      const [mealPlan, setMealPlan] = useState({});
-      const [savedAt, setSavedAt]   = useState(null);
-      const [restore, setRestore]   = useState(null);
+      const [screen, setScreen]         = useState('setup');
+      const [config, setConfig]         = useState(null);
+      const [mealPlan, setMealPlan]     = useState({});
+      const [savedAt, setSavedAt]       = useState(null);
+      const [restore, setRestore]       = useState(null);
+      const [customMeals, setCustomMeals] = useState([]);
 
       // 시작 시 localStorage 확인
       useEffect(() => {
@@ -1059,6 +1272,10 @@
             const data = JSON.parse(raw);
             if (data?.config && data?.mealPlan) setRestore(data);
           }
+        } catch(e) {}
+        try {
+          const cm = localStorage.getItem(CUSTOM_KEY);
+          if (cm) setCustomMeals(JSON.parse(cm) || []);
         } catch(e) {}
       }, []);
 
@@ -1080,21 +1297,37 @@
         } else {
           const minAge    = getMinAge(cfgOrConfig.members);
           const children  = hasKids(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children));
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals));
         }
         setScreen('plan');
-      }, []);
+      }, [customMeals]);
 
       const handleRegen = useCallback(() => {
         if (!config) return;
         const minAge   = getMinAge(config.members);
         const children = hasKids(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children));
-      }, [config]);
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals));
+      }, [config, customMeals]);
 
       const handleImport = useCallback((cfg, plan) => {
         setConfig(cfg);
         setMealPlan(plan);
+      }, []);
+
+      const addCustomMeal = useCallback((meal) => {
+        setCustomMeals(prev => {
+          const next = [...prev, meal];
+          try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(next)); } catch(e) {}
+          return next;
+        });
+      }, []);
+
+      const deleteCustomMeal = useCallback((id) => {
+        setCustomMeals(prev => {
+          const next = prev.filter(m => m.id !== id);
+          try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(next)); } catch(e) {}
+          return next;
+        });
       }, []);
 
       if (screen === 'plan') {
@@ -1107,6 +1340,9 @@
             onBack={() => setScreen('setup')}
             onRegen={handleRegen}
             onImport={handleImport}
+            customMeals={customMeals}
+            onAddCustomMeal={addCustomMeal}
+            onDeleteCustomMeal={deleteCustomMeal}
           />
         );
       }
@@ -1114,6 +1350,14 @@
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').catch(function() {});
+      });
+    }
   </script>
 </body>
 </html>
