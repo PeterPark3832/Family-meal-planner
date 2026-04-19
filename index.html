@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="가족 구성원에 맞는 맞춤형 주간·월간 식단을 자동으로 추천해주는 플래너" />
+  <title>🍽️ 우리 가족 식단 플래너</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Noto Sans KR', sans-serif; box-sizing: border-box; }
+    .meal-card { transition: all 0.15s ease; }
+    .meal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.13); }
+    .dice-btn { opacity: 0; transition: opacity 0.15s; }
+    .cell-wrap:hover .dice-btn { opacity: 1; }
+    .week-scroll { overflow-x: auto; }
+    .week-scroll::-webkit-scrollbar { height: 5px; }
+    .week-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .fade-in  { animation: fadeIn 0.22s ease; }
+    .slide-up { animation: slideUp 0.28s ease; }
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .print-wrap { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+      .print-title { display: block !important; text-align: center; font-size: 18px; font-weight: 900; margin-bottom: 12px; }
+    }
+    .print-title { display: none; }
+    .today-col { background: linear-gradient(to bottom, #fff7ed, #fff) !important; }
+    .today-header { color: #ea580c !important; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useCallback, useEffect, useRef } = React;
+
+    // ═══════════════════════════════════════════════════
+    //  상수
+    // ═══════════════════════════════════════════════════
+    const SAVE_KEY = 'fmp_v2';
+
+    const MEALS = [
+      // 한식 아침
+      { id:'k_b1', name:'미역국+밥',       cuisine:'korean',   types:['breakfast','lunch','dinner'], minAge:0,  spicy:false },
+      { id:'k_b2', name:'된장국+밥',       cuisine:'korean',   types:['breakfast','lunch','dinner'], minAge:0,  spicy:false },
+      { id:'k_b3', name:'계란프라이+밥',   cuisine:'korean',   types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'k_b4', name:'흰죽',            cuisine:'korean',   types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'k_b5', name:'야채죽',          cuisine:'korean',   types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'k_b6', name:'호박죽',          cuisine:'korean',   types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'k_b7', name:'김치볶음밥',      cuisine:'korean',   types:['breakfast','lunch'],          minAge:7,  spicy:true  },
+      { id:'k_b8', name:'참치마요덮밥',    cuisine:'korean',   types:['breakfast','lunch'],          minAge:5,  spicy:false },
+      // 한식 점심/저녁
+      { id:'k1',  name:'김치찌개',         cuisine:'korean',   types:['lunch','dinner'],             minAge:7,  spicy:true  },
+      { id:'k2',  name:'된장찌개',         cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k3',  name:'순두부찌개',       cuisine:'korean',   types:['lunch','dinner'],             minAge:7,  spicy:true  },
+      { id:'k4',  name:'부대찌개',         cuisine:'korean',   types:['lunch','dinner'],             minAge:10, spicy:true  },
+      { id:'k5',  name:'청국장찌개',       cuisine:'korean',   types:['lunch','dinner'],             minAge:5,  spicy:false },
+      { id:'k6',  name:'불고기',           cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k7',  name:'제육볶음',         cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'k8',  name:'갈비찜',           cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k9',  name:'닭볶음탕',         cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'k10', name:'잡채',             cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k11', name:'비빔밥',           cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'k12', name:'볶음밥',           cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'k13', name:'삼겹살구이',       cuisine:'korean',   types:['dinner'],                     minAge:5,  spicy:false },
+      { id:'k14', name:'두부조림',         cuisine:'korean',   types:['lunch','dinner'],             minAge:7,  spicy:true  },
+      { id:'k15', name:'계란찜',           cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k16', name:'감자조림',         cuisine:'korean',   types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'k17', name:'고등어조림',       cuisine:'korean',   types:['lunch','dinner'],             minAge:5,  spicy:false },
+      { id:'k18', name:'오징어볶음',       cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'k19', name:'삼치구이',         cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'k20', name:'콩나물국밥',       cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'k21', name:'떡국',             cuisine:'korean',   types:['breakfast','lunch'],          minAge:2,  spicy:false },
+      { id:'k22', name:'참치김치찌개',     cuisine:'korean',   types:['lunch','dinner'],             minAge:7,  spicy:true  },
+      { id:'k23', name:'돼지불백',         cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'k24', name:'소불고기덮밥',     cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'k25', name:'닭갈비',           cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'k26', name:'황태해장국',       cuisine:'korean',   types:['breakfast','lunch'],          minAge:5,  spicy:false },
+      { id:'k27', name:'순대국밥',         cuisine:'korean',   types:['lunch','dinner'],             minAge:8,  spicy:false },
+      { id:'k28', name:'냉면',             cuisine:'korean',   types:['lunch'],                      minAge:5,  spicy:false },
+      { id:'k29', name:'떡볶이',           cuisine:'korean',   types:['lunch'],                      minAge:7,  spicy:true  },
+      { id:'k30', name:'만두국',           cuisine:'korean',   types:['breakfast','lunch','dinner'], minAge:3,  spicy:false },
+      { id:'k31', name:'육개장',           cuisine:'korean',   types:['lunch','dinner'],             minAge:9,  spicy:true  },
+      { id:'k32', name:'갈비탕',           cuisine:'korean',   types:['lunch','dinner'],             minAge:3,  spicy:false },
+      // 양식 아침
+      { id:'w_b1', name:'오믈렛',          cuisine:'western',  types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'w_b2', name:'팬케이크',        cuisine:'western',  types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'w_b3', name:'프렌치토스트',    cuisine:'western',  types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'w_b4', name:'샌드위치',        cuisine:'western',  types:['breakfast','lunch'],          minAge:0,  spicy:false },
+      { id:'w_b5', name:'베이글+크림치즈', cuisine:'western',  types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'w_b6', name:'시리얼+우유',     cuisine:'western',  types:['breakfast'],                  minAge:0,  spicy:false },
+      { id:'w_b7', name:'요거트+그래놀라', cuisine:'western',  types:['breakfast'],                  minAge:3,  spicy:false },
+      // 양식 점심/저녁
+      { id:'w1',  name:'크림파스타',       cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w2',  name:'토마토파스타',     cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w3',  name:'오일파스타',       cuisine:'western',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'w4',  name:'까르보나라',       cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w5',  name:'미트볼 스파게티',  cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w6',  name:'피자',             cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w7',  name:'함박스테이크',     cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w8',  name:'리조또',           cuisine:'western',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'w9',  name:'그라탕',           cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w10', name:'크림수프',         cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w11', name:'카레라이스',       cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w12', name:'오므라이스',       cuisine:'western',  types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'w13', name:'치킨 스테이크',    cuisine:'western',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'w14', name:'클램차우더',       cuisine:'western',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'w15', name:'라자냐',           cuisine:'western',  types:['dinner'],                     minAge:3,  spicy:false },
+      { id:'w16', name:'닭가슴살 샐러드',  cuisine:'western',  types:['lunch'],                      minAge:5,  spicy:false },
+      { id:'w17', name:'비프 스튜',        cuisine:'western',  types:['dinner'],                     minAge:5,  spicy:false },
+      { id:'w18', name:'파니니',           cuisine:'western',  types:['breakfast','lunch'],          minAge:0,  spicy:false },
+      { id:'w19', name:'퀘사디야',         cuisine:'western',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      // 중식
+      { id:'c1',  name:'짜장면',           cuisine:'chinese',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'c2',  name:'짬뽕',             cuisine:'chinese',  types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'c3',  name:'중화볶음밥',       cuisine:'chinese',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'c4',  name:'탕수육',           cuisine:'chinese',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'c5',  name:'마파두부',         cuisine:'chinese',  types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'c6',  name:'깐풍기',           cuisine:'chinese',  types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'c7',  name:'유린기',           cuisine:'chinese',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'c8',  name:'팔보채',           cuisine:'chinese',  types:['dinner'],                     minAge:5,  spicy:false },
+      { id:'c9',  name:'짬뽕밥',          cuisine:'chinese',  types:['lunch','dinner'],             minAge:8,  spicy:true  },
+      { id:'c10', name:'중화풍 잡채',      cuisine:'chinese',  types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'c11', name:'고추잡채',         cuisine:'chinese',  types:['lunch','dinner'],             minAge:7,  spicy:true  },
+      { id:'c12', name:'훠궈 (전골)',      cuisine:'chinese',  types:['dinner'],                     minAge:8,  spicy:true  },
+      // 일식
+      { id:'j1',  name:'라멘',             cuisine:'japanese', types:['lunch','dinner'],             minAge:5,  spicy:false },
+      { id:'j2',  name:'우동',             cuisine:'japanese', types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'j3',  name:'소바',             cuisine:'japanese', types:['lunch'],                      minAge:5,  spicy:false },
+      { id:'j4',  name:'돈카츠',           cuisine:'japanese', types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'j5',  name:'오야코동',         cuisine:'japanese', types:['lunch','dinner'],             minAge:0,  spicy:false },
+      { id:'j6',  name:'카츠동',           cuisine:'japanese', types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'j7',  name:'규동',             cuisine:'japanese', types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'j8',  name:'연어덮밥',         cuisine:'japanese', types:['lunch','dinner'],             minAge:7,  spicy:false },
+      { id:'j9',  name:'나베 (전골)',      cuisine:'japanese', types:['dinner'],                     minAge:5,  spicy:false },
+      { id:'j10', name:'야끼소바',         cuisine:'japanese', types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'j11', name:'텐동',             cuisine:'japanese', types:['lunch','dinner'],             minAge:3,  spicy:false },
+      { id:'j12', name:'미소라멘',         cuisine:'japanese', types:['lunch','dinner'],             minAge:5,  spicy:false },
+      { id:'j13', name:'스시 (가정식)',    cuisine:'japanese', types:['lunch','dinner'],             minAge:7,  spicy:false },
+      { id:'j14', name:'아게다시두부',     cuisine:'japanese', types:['lunch','dinner'],             minAge:5,  spicy:false },
+      { id:'j15', name:'오코노미야키',     cuisine:'japanese', types:['lunch','dinner'],             minAge:5,  spicy:false },
+    ];
+
+    const CUISINE_INFO = {
+      korean:   { label:'한식',   emoji:'🍚', bg:'bg-orange-50',  border:'border-orange-300', badge:'bg-orange-100 text-orange-700',  bar:'bg-orange-400' },
+      western:  { label:'양식',   emoji:'🍝', bg:'bg-blue-50',    border:'border-blue-300',   badge:'bg-blue-100 text-blue-700',      bar:'bg-blue-400'   },
+      chinese:  { label:'중식',   emoji:'🥢', bg:'bg-red-50',     border:'border-red-300',    badge:'bg-red-100 text-red-700',        bar:'bg-red-400'    },
+      japanese: { label:'일식',   emoji:'🍱', bg:'bg-purple-50',  border:'border-purple-300', badge:'bg-purple-100 text-purple-700',  bar:'bg-purple-400' },
+      custom:   { label:'직접입력', emoji:'✏️', bg:'bg-gray-50', border:'border-gray-300',   badge:'bg-gray-100 text-gray-600',      bar:'bg-gray-400'   },
+    };
+
+    const MEAL_TYPES = [
+      { id:'breakfast', label:'아침', emoji:'🌅' },
+      { id:'lunch',     label:'점심', emoji:'☀️' },
+      { id:'dinner',    label:'저녁', emoji:'🌙' },
+    ];
+
+    const WEEK_DAYS = ['월','화','수','목','금','토','일'];
+
+    // ═══════════════════════════════════════════════════
+    //  헬퍼 함수
+    // ═══════════════════════════════════════════════════
+    const getMinAge = (members) => {
+      const kids = members.filter(m => m.type === 'child');
+      return kids.length ? Math.min(...kids.map(m => parseInt(m.age) || 0)) : 99;
+    };
+
+    const getPool = (mealType, cuisines, minAge) =>
+      MEALS.filter(m => cuisines.includes(m.cuisine) && m.types.includes(mealType) && m.minAge <= minAge);
+
+    const shuffle = (arr) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    function generatePlan(period, cuisines, minAge) {
+      const plan = {};
+      for (let d = 0; d < period; d++) {
+        plan[d] = {};
+        const weekStart = Math.floor(d / 7) * 7;
+        for (const mt of ['breakfast','lunch','dinner']) {
+          const pool = getPool(mt, cuisines, minAge);
+          if (!pool.length) { plan[d][mt] = { name:'직접 입력', cuisine:'custom' }; continue; }
+          const used = new Set();
+          for (let wd = weekStart; wd < d; wd++) {
+            if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
+          }
+          const fresh = pool.filter(m => !used.has(m.name));
+          const chosen = shuffle(fresh.length ? fresh : pool)[0];
+          plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
+        }
+      }
+      return plan;
+    }
+
+    function pickOneMeal(mealType, cuisines, minAge, excludeName) {
+      const pool = getPool(mealType, cuisines, minAge).filter(m => m.name !== excludeName);
+      if (!pool.length) return null;
+      return shuffle(pool)[0];
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 식사 셀
+    // ═══════════════════════════════════════════════════
+    function MealCell({ meal, onClick, onRegen }) {
+      const info = CUISINE_INFO[meal?.cuisine || 'custom'];
+      if (!meal?.name) {
+        return (
+          <div onClick={onClick}
+            className="meal-card border-2 border-dashed border-gray-200 rounded-xl p-2 min-h-[72px] flex items-center justify-center cursor-pointer hover:border-orange-300 hover:bg-orange-50">
+            <span className="text-gray-300 text-xs">+ 추가</span>
+          </div>
+        );
+      }
+      return (
+        <div className="cell-wrap relative">
+          <div onClick={onClick}
+            className={`meal-card border-2 ${info.border} ${info.bg} rounded-xl p-2.5 min-h-[72px] cursor-pointer`}>
+            <div className="flex items-start justify-between gap-1">
+              <span className="text-xs font-medium text-gray-800 leading-tight">{meal.name}</span>
+              <span className="text-sm flex-shrink-0">{info.emoji}</span>
+            </div>
+            <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
+              {meal.note && <span title={meal.note} className="text-[10px] text-gray-400 cursor-help">📝</span>}
+            </div>
+            {meal.note && (
+              <p className="text-[10px] text-gray-400 mt-1 leading-tight truncate" title={meal.note}>{meal.note}</p>
+            )}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRegen(); }}
+            className="dice-btn absolute top-1.5 right-1.5 w-6 h-6 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs shadow-sm hover:bg-orange-50 hover:border-orange-300"
+            title="다른 메뉴로 변경"
+          >🎲</button>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 메뉴 수정 모달
+    // ═══════════════════════════════════════════════════
+    function EditModal({ dayIdx, mealType, meal, config, minAge, onSave, onClose }) {
+      const [search, setSearch]     = useState('');
+      const [tab, setTab]           = useState('suggest');
+      const [customText, setCustomText] = useState(meal?.cuisine === 'custom' ? meal.name : '');
+      const [note, setNote]         = useState(meal?.note || '');
+      const [pendingMeal, setPending] = useState(null);
+
+      const mealLabel = MEAL_TYPES.find(m => m.id === mealType)?.label;
+
+      const suggestions = useMemo(() => {
+        const pool = getPool(mealType, config.cuisines, minAge);
+        if (search.trim()) return pool.filter(m => m.name.includes(search.trim()));
+        return shuffle(pool).slice(0, 16);
+      }, [mealType, config.cuisines, minAge, search]);
+
+      const confirmSave = (base) => onSave({ ...base, note: note.trim() });
+
+      return (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-3 sm:p-6" onClick={onClose}>
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden slide-up" onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-orange-500 font-semibold">{dayIdx+1}일차</p>
+                  <h3 className="text-lg font-bold text-gray-800">{mealLabel} 메뉴 선택</h3>
+                </div>
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl mt-0.5">✕</button>
+              </div>
+              <div className="flex gap-2 mt-3">
+                {['suggest','custom'].map(t => (
+                  <button key={t} onClick={() => setTab(t)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${tab===t ? 'bg-orange-500 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'}`}>
+                    {t==='suggest' ? '🍽️ 추천 메뉴' : '✏️ 직접 입력'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 본문 */}
+            <div className="overflow-y-auto" style={{maxHeight:'52vh'}}>
+              {tab === 'suggest' ? (
+                <div className="p-4">
+                  <div className="relative mb-3">
+                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
+                    <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                      placeholder="메뉴 검색..." autoFocus
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm pl-9 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+                  </div>
+                  {suggestions.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400">
+                      <div className="text-3xl mb-2">🥲</div>
+                      <p className="text-sm">검색 결과가 없어요</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {suggestions.map(m => (
+                        <button key={m.id}
+                          onClick={() => { setPending({name:m.name, cuisine:m.cuisine}); setTab('note'); }}
+                          className={`p-3 rounded-xl border text-left transition-all hover:shadow-md active:scale-95 ${CUISINE_INFO[m.cuisine].bg} ${CUISINE_INFO[m.cuisine].border} ${pendingMeal?.name===m.name ? 'ring-2 ring-orange-400' : ''}`}>
+                          <div className="text-sm font-medium text-gray-800 leading-tight">{m.name}</div>
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <span className="text-xs">{CUISINE_INFO[m.cuisine].emoji}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${CUISINE_INFO[m.cuisine].badge}`}>{CUISINE_INFO[m.cuisine].label}</span>
+                            {m.spicy && <span className="text-[10px]">🌶️</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : tab === 'custom' ? (
+                <div className="p-5 space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">메뉴 이름</label>
+                    <input type="text" value={customText} onChange={e => setCustomText(e.target.value)}
+                      onKeyDown={e => { if(e.key==='Enter' && customText.trim()) confirmSave({name:customText.trim(), cuisine:'custom'}); }}
+                      placeholder="예) 엄마표 불고기, 오늘의 도시락..."
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                      autoFocus />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">메모 <span className="font-normal text-gray-400">(선택)</span></label>
+                    <input type="text" value={note} onChange={e => setNote(e.target.value)}
+                      placeholder="재료, 주의사항 등..."
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+                  </div>
+                  <button onClick={() => customText.trim() && confirmSave({name:customText.trim(), cuisine:'custom'})}
+                    disabled={!customText.trim()}
+                    className="w-full py-3 bg-orange-500 text-white rounded-xl font-bold text-sm disabled:opacity-40 hover:bg-orange-600 transition-all shadow-sm">
+                    저장하기 ✓
+                  </button>
+                </div>
+              ) : (
+                /* note 탭: 추천 메뉴 선택 후 메모 입력 */
+                <div className="p-5 space-y-3">
+                  <div className={`p-3 rounded-xl border-2 ${CUISINE_INFO[pendingMeal?.cuisine||'custom'].border} ${CUISINE_INFO[pendingMeal?.cuisine||'custom'].bg}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{CUISINE_INFO[pendingMeal?.cuisine||'custom'].emoji}</span>
+                      <span className="font-bold text-gray-800">{pendingMeal?.name}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5">메모 <span className="font-normal text-gray-400">(선택)</span></label>
+                    <input type="text" value={note} onChange={e => setNote(e.target.value)}
+                      onKeyDown={e => { if(e.key==='Enter') confirmSave(pendingMeal); }}
+                      placeholder="재료, 소스, 주의사항 등..."
+                      autoFocus
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setPending(null); setTab('suggest'); }}
+                      className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                      ← 다시 선택
+                    </button>
+                    <button onClick={() => confirmSave(pendingMeal)}
+                      className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all shadow-sm">
+                      저장하기 ✓
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 요리 분포 통계
+    // ═══════════════════════════════════════════════════
+    function StatsPanel({ mealPlan, period }) {
+      const counts = useMemo(() => {
+        const c = { korean:0, western:0, chinese:0, japanese:0, custom:0 };
+        for (let d = 0; d < period; d++) {
+          for (const mt of ['breakfast','lunch','dinner']) {
+            const cuisine = mealPlan[d]?.[mt]?.cuisine;
+            if (cuisine && c[cuisine] !== undefined) c[cuisine]++;
+          }
+        }
+        return c;
+      }, [mealPlan, period]);
+
+      const total = Object.values(counts).reduce((a,b) => a+b, 0) || 1;
+      const items = Object.entries(counts).filter(([,v]) => v > 0);
+
+      return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 no-print">
+          <h3 className="text-sm font-bold text-gray-700 mb-3">📊 요리 분포</h3>
+          <div className="space-y-2">
+            {items.map(([cuisine, cnt]) => {
+              const info = CUISINE_INFO[cuisine];
+              const pct = Math.round(cnt / total * 100);
+              return (
+                <div key={cuisine} className="flex items-center gap-2">
+                  <span className="text-xs w-12 text-gray-600 flex-shrink-0">{info.emoji} {info.label}</span>
+                  <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${info.bar} transition-all`} style={{width:`${pct}%`}} />
+                  </div>
+                  <span className="text-xs text-gray-500 w-8 text-right flex-shrink-0">{pct}%</span>
+                  <span className="text-xs text-gray-400 w-8 flex-shrink-0">{cnt}식</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 이전 식단 복원 프롬프트
+    // ═══════════════════════════════════════════════════
+    function RestorePrompt({ savedAt, onRestore, onDismiss }) {
+      return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm fade-in text-center">
+            <div className="text-4xl mb-3">💾</div>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">이전 식단이 있어요</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {formatTime(savedAt)}에 저장된 식단을<br />이어서 보시겠어요?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={onDismiss}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                새로 만들기
+              </button>
+              <button onClick={onRestore}
+                className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all shadow-md">
+                이어서 보기 →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  설정 스텝 컴포넌트들
+    // ═══════════════════════════════════════════════════
+    function StepFamily({ members, setMembers }) {
+      const updateCount = (n) => {
+        const next = [...members];
+        while (next.length < n) next.push({ type:'adult', gender:'female', age:30 });
+        setMembers(next.slice(0, n));
+      };
+      const update = (i, field, val) => {
+        const next = [...members];
+        next[i] = { ...next[i], [field]: val };
+        if (field==='type' && val==='adult') next[i].age = 35;
+        if (field==='type' && val==='child') next[i].age = 8;
+        setMembers(next);
+      };
+      return (
+        <div className="fade-in">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">가족 구성원 설정</h2>
+          <p className="text-gray-500 text-sm mb-5">함께 식사하는 인원을 알려주세요</p>
+          <div className="mb-5">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">인원 수</label>
+            <div className="flex gap-2 flex-wrap">
+              {[1,2,3,4,5].map(n => (
+                <button key={n} onClick={() => updateCount(n)}
+                  className={`w-11 h-11 rounded-xl border-2 font-bold text-sm transition-all ${members.length===n ? 'border-orange-500 bg-orange-500 text-white shadow-md' : 'border-gray-200 text-gray-500 hover:border-orange-300'}`}>
+                  {n}
+                </button>
+              ))}
+              <span className="flex items-center text-gray-500 text-sm pl-1">명</span>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            {members.map((m, i) => (
+              <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg flex-shrink-0">
+                  {m.type==='child' ? '🧒' : m.gender==='male' ? '👨' : '👩'}
+                </div>
+                <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">
+                  <select value={m.type} onChange={e => update(i,'type',e.target.value)}
+                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400">
+                    <option value="adult">성인</option>
+                    <option value="child">자녀</option>
+                  </select>
+                  <select value={m.gender} onChange={e => update(i,'gender',e.target.value)}
+                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400">
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+                  <div className="flex items-center gap-1">
+                    <input type="number" value={m.age}
+                      onChange={e => update(i,'age',parseInt(e.target.value)||0)}
+                      min={m.type==='child'?1:18} max={99}
+                      className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center bg-white focus:outline-none focus:border-orange-400" />
+                    <span className="text-gray-500 text-sm">세</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function StepPeriod({ period, setPeriod, custom, setCustom }) {
+      const opts = [
+        { val:7,  label:'1주일', sub:'7일'  },
+        { val:14, label:'2주일', sub:'14일' },
+        { val:21, label:'3주일', sub:'21일' },
+        { val:30, label:'한 달', sub:'30일' },
+      ];
+      return (
+        <div className="fade-in">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">식단 기간 선택</h2>
+          <p className="text-gray-500 text-sm mb-5">얼마나 계획하실 건가요?</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {opts.map(o => (
+              <button key={o.val} onClick={() => { setPeriod(o.val); setCustom(''); }}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${period===o.val && custom==='' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                <div className={`font-bold text-lg ${period===o.val && custom==='' ? 'text-orange-600' : 'text-gray-700'}`}>{o.label}</div>
+                <div className="text-gray-400 text-xs mt-0.5">{o.sub}</div>
+              </button>
+            ))}
+          </div>
+          <div onClick={() => setCustom(p => p==='' ? '10' : p)}
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${custom!=='' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+            <div className={`font-bold mb-2 ${custom!=='' ? 'text-orange-600' : 'text-gray-700'}`}>✏️ 직접 입력</div>
+            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+              <input type="number" value={custom}
+                onChange={e => { setCustom(e.target.value); setPeriod(parseInt(e.target.value)||7); }}
+                placeholder="일 수 입력" min="1" max="90"
+                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-orange-400" />
+              <span className="text-gray-500 text-sm">일</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function StepCuisine({ cuisines, setCuisines }) {
+      const toggle = (c) => setCuisines(prev =>
+        prev.includes(c) ? (prev.length>1 ? prev.filter(x=>x!==c) : prev) : [...prev, c]
+      );
+      const items = [
+        { key:'korean',   icon:'🍚', desc:'김치찌개, 불고기, 된장찌개...' },
+        { key:'western',  icon:'🍝', desc:'파스타, 피자, 오므라이스...'   },
+        { key:'chinese',  icon:'🥢', desc:'짜장면, 탕수육, 볶음밥...'    },
+        { key:'japanese', icon:'🍱', desc:'우동, 돈카츠, 오야코동...'     },
+      ];
+      return (
+        <div className="fade-in">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">요리 종류 선택</h2>
+          <p className="text-gray-500 text-sm mb-5">선호하는 요리를 선택하세요 <span className="text-orange-500 font-medium">(중복 선택 가능)</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            {items.map(({ key, icon, desc }) => {
+              const info = CUISINE_INFO[key];
+              const on = cuisines.includes(key);
+              return (
+                <button key={key} onClick={() => toggle(key)}
+                  className={`p-5 rounded-xl border-2 text-left transition-all relative ${on ? `${info.border} ${info.bg} shadow-md` : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                  {on && <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</div>}
+                  <div className="text-3xl mb-2">{icon}</div>
+                  <div className={`font-bold ${on ? 'text-gray-800' : 'text-gray-600'}`}>{info.label}</div>
+                  <div className="text-gray-400 text-xs mt-1 leading-tight">{desc}</div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-400 mt-4 text-center">* 최소 1개 이상 선택해야 합니다</p>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  설정 화면
+    // ═══════════════════════════════════════════════════
+    function SetupScreen({ onComplete, restore }) {
+      const [step, setStep]         = useState(1);
+      const [members, setMembers]   = useState([
+        { type:'adult', gender:'male',   age:35 },
+        { type:'adult', gender:'female', age:33 },
+      ]);
+      const [period, setPeriod]     = useState(7);
+      const [custom, setCustom]     = useState('');
+      const [cuisines, setCuisines] = useState(['korean']);
+      const [restoreData, setRestoreData] = useState(restore || null);
+
+      const finalPeriod = custom !== '' ? (parseInt(custom)||7) : period;
+      const stepLabels  = ['가족 구성원','식단 기간','요리 종류'];
+
+      return (
+        <div className="max-w-xl mx-auto p-4 py-10">
+          {restoreData && (
+            <RestorePrompt
+              savedAt={restoreData.savedAt}
+              onRestore={() => { setRestoreData(null); onComplete(restoreData.config, restoreData.mealPlan); }}
+              onDismiss={() => setRestoreData(null)}
+            />
+          )}
+
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-3 select-none">🍽️</div>
+            <h1 className="text-3xl font-black text-gray-800">우리 가족 식단 플래너</h1>
+            <p className="text-gray-500 mt-2 text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 mb-8">
+            {stepLabels.map((lbl, i) => {
+              const s = i + 1, done = s < step, active = s === step;
+              return (
+                <React.Fragment key={s}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${done ? 'bg-green-500 text-white' : active ? 'bg-orange-500 text-white shadow-orange-200 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
+                      {done ? '✓' : s}
+                    </div>
+                    <span className={`text-xs mt-1 font-medium ${active ? 'text-orange-600' : 'text-gray-400'}`}>{lbl}</span>
+                  </div>
+                  {i < 2 && <div className={`w-12 h-0.5 mb-5 rounded ${done ? 'bg-green-400' : 'bg-gray-200'}`} />}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+            {step === 1 && <StepFamily members={members} setMembers={setMembers} />}
+            {step === 2 && <StepPeriod period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />}
+            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} />}
+
+            <div className="flex justify-between mt-8">
+              <button onClick={() => setStep(s => s-1)} disabled={step===1}
+                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-all">
+                ← 이전
+              </button>
+              {step < 3 ? (
+                <button onClick={() => setStep(s => s+1)}
+                  className="px-6 py-2.5 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-all shadow-md shadow-orange-200">
+                  다음 →
+                </button>
+              ) : (
+                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines })}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:from-orange-600 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
+                  식단 생성 🎉
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  식단표 화면
+    // ═══════════════════════════════════════════════════
+    function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen }) {
+      const [week, setWeek]       = useState(0);
+      const [editTarget, setEdit] = useState(null);
+      const [copied, setCopied]   = useState(false);
+      const [showStats, setShowStats] = useState(false);
+
+      const totalWeeks = Math.ceil(config.period / 7);
+      const weekStart  = week * 7;
+      const weekEnd    = Math.min(weekStart + 7, config.period);
+      const daysInWeek = weekEnd - weekStart;
+      const minAge     = getMinAge(config.members);
+      const todayDow   = new Date().getDay(); // 0=일 → 6=토, 我们用 1=月~0=日
+      // 转换: JS getDay 0=Sun,1=Mon...6=Sat → WEEK_DAYS 0=Mon...6=Sun
+      const todayIdx   = todayDow === 0 ? 6 : todayDow - 1;
+
+      const saveMeal = ({ name, cuisine, note }) => {
+        const { day, mt } = editTarget;
+        setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name, cuisine, note } } }));
+        setEdit(null);
+      };
+
+      const regenOne = (day, mt) => {
+        const current = mealPlan[day]?.[mt]?.name;
+        const chosen  = pickOneMeal(mt, config.cuisines, minAge, current);
+        if (!chosen) return;
+        setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
+      };
+
+      const exportText = () => {
+        const lines = [`🍽️ 우리 가족 식단표 (${config.period}일)\n`];
+        for (let w = 0; w < totalWeeks; w++) {
+          lines.push(`\n[${w+1}주차]`);
+          const wStart = w * 7, wEnd = Math.min(wStart+7, config.period);
+          for (const mt of MEAL_TYPES) {
+            const row = [mt.label.padEnd(4)];
+            for (let d = wStart; d < wEnd; d++) {
+              row.push((mealPlan[d]?.[mt.id]?.name || '-').slice(0,10).padEnd(11));
+            }
+            lines.push(row.join(' '));
+          }
+        }
+        navigator.clipboard.writeText(lines.join('\n')).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto p-3 py-6">
+          {/* 인쇄 전용 제목 */}
+          <div className="print-title">우리 가족 식단표 ({config.period}일 플랜)</div>
+
+          {/* 상단 바 */}
+          <div className="flex items-center justify-between mb-5 no-print flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={onBack} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium transition-all">← 설정</button>
+              <div>
+                <h1 className="text-lg font-black text-gray-800">우리 가족 식단표</h1>
+                <p className="text-xs text-gray-400">
+                  {config.members.length}인 가족 · {config.period}일 플랜 · {config.cuisines.map(c => CUISINE_INFO[c].label).join(' / ')}
+                  {savedAt && <span className="ml-2 text-gray-300">· 저장 {formatTime(savedAt)}</span>}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={() => setShowStats(s => !s)}
+                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${showStats ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                📊 통계
+              </button>
+              <button onClick={exportText}
+                className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                {copied ? '✓ 복사됨!' : '📋 텍스트 복사'}
+              </button>
+              <button onClick={onRegen}
+                className="px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                🔄 전체 재생성
+              </button>
+              <button onClick={() => window.print()}
+                className="px-3 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
+                🖨️ 인쇄
+              </button>
+            </div>
+          </div>
+
+          {/* 통계 패널 */}
+          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} /></div>}
+
+          {/* 주차 탭 */}
+          {totalWeeks > 1 && (
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-print">
+              {Array.from({length:totalWeeks}, (_,i) => (
+                <button key={i} onClick={() => setWeek(i)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${week===i ? 'bg-orange-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}>
+                  {i+1}주차
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* 식단 그리드 */}
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
+            <div className="week-scroll">
+              <div style={{display:'grid', gridTemplateColumns:`72px repeat(${daysInWeek}, minmax(110px,1fr))`}}>
+                {/* 코너 */}
+                <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
+                {/* 날짜 헤더 */}
+                {Array.from({length:daysInWeek}, (_,i) => {
+                  const di = weekStart + i;
+                  const dow = di % 7;
+                  const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
+                  return (
+                    <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
+                      <div className={`text-[10px] font-medium ${isToday ? 'text-orange-400' : 'text-gray-400'}`}>{isToday ? '오늘' : `${di+1}일차`}</div>
+                      <div className={`font-bold text-sm ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'today-header font-black' : 'text-gray-700'}`}>{WEEK_DAYS[dow]}</div>
+                    </div>
+                  );
+                })}
+
+                {/* 식사 행 */}
+                {MEAL_TYPES.map(mt => (
+                  <React.Fragment key={mt.id}>
+                    <div className="p-2.5 flex flex-col items-center justify-center border-b border-r border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                      <span className="text-xl">{mt.emoji}</span>
+                      <span className="text-[10px] font-bold text-gray-500 mt-0.5">{mt.label}</span>
+                    </div>
+                    {Array.from({length:daysInWeek}, (_,i) => {
+                      const di = weekStart + i;
+                      const dow = di % 7;
+                      const isToday = dow === todayIdx && week === 0;
+                      const meal = mealPlan[di]?.[mt.id];
+                      return (
+                        <div key={i} className={`p-1.5 border-b border-l border-gray-100 ${isToday ? 'today-col' : ''}`}>
+                          <MealCell
+                            meal={meal}
+                            onClick={() => setEdit({ day:di, mt:mt.id })}
+                            onRegen={() => regenOne(di, mt.id)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 범례 */}
+          <div className="mt-4 flex flex-wrap items-center gap-2 no-print">
+            {config.cuisines.map(c => (
+              <span key={c} className={`px-3 py-1 rounded-full text-xs font-medium border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
+                {CUISINE_INFO[c].emoji} {CUISINE_INFO[c].label}
+              </span>
+            ))}
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">✏️ 직접입력</span>
+            <span className="text-xs text-gray-400 ml-auto hidden sm:block">🎲 셀 호버 시 개별 재생성 · 클릭 시 메뉴 변경</span>
+          </div>
+
+          {/* 가족 요약 */}
+          <div className="mt-3 flex flex-wrap gap-2 no-print">
+            {config.members.map((m, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-gray-200 text-xs text-gray-600">
+                <span>{m.type==='child' ? '🧒' : m.gender==='male' ? '👨' : '👩'}</span>
+                <span>{m.type==='adult' ? '성인' : '자녀'} · {m.age}세</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 편집 모달 */}
+          {editTarget && (
+            <EditModal
+              dayIdx={editTarget.day}
+              mealType={editTarget.mt}
+              meal={mealPlan[editTarget.day]?.[editTarget.mt]}
+              config={config}
+              minAge={minAge}
+              onSave={saveMeal}
+              onClose={() => setEdit(null)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  최상위 App
+    // ═══════════════════════════════════════════════════
+    function App() {
+      const [screen, setScreen]     = useState('setup');
+      const [config, setConfig]     = useState(null);
+      const [mealPlan, setMealPlan] = useState({});
+      const [savedAt, setSavedAt]   = useState(null);
+      const [restore, setRestore]   = useState(null);
+
+      // 시작 시 localStorage 확인
+      useEffect(() => {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (data?.config && data?.mealPlan) setRestore(data);
+          }
+        } catch(e) {}
+      }, []);
+
+      // 식단 변경 시 자동 저장
+      useEffect(() => {
+        if (screen === 'plan' && config && Object.keys(mealPlan).length > 0) {
+          const ts = Date.now();
+          try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify({ config, mealPlan, savedAt: ts }));
+            setSavedAt(ts);
+          } catch(e) {}
+        }
+      }, [mealPlan, screen, config]);
+
+      const handleComplete = useCallback((cfgOrConfig, existingPlan) => {
+        // cfgOrConfig는 새 설정 or 복원 시 config 객체
+        setConfig(cfgOrConfig);
+        if (existingPlan) {
+          setMealPlan(existingPlan);
+        } else {
+          const minAge = getMinAge(cfgOrConfig.members);
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge));
+        }
+        setScreen('plan');
+      }, []);
+
+      const handleRegen = useCallback(() => {
+        if (!config) return;
+        const minAge = getMinAge(config.members);
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge));
+      }, [config]);
+
+      if (screen === 'plan') {
+        return (
+          <PlanScreen
+            config={config}
+            mealPlan={mealPlan}
+            setMealPlan={setMealPlan}
+            savedAt={savedAt}
+            onBack={() => setScreen('setup')}
+            onRegen={handleRegen}
+          />
+        );
+      }
+      return <SetupScreen onComplete={handleComplete} restore={restore} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
