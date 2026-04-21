@@ -53,6 +53,8 @@
     @media (max-width: 640px) {
       .touch-target { min-width: 36px; min-height: 36px; }
     }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 min-h-screen">
@@ -1854,6 +1856,152 @@
     }
 
     // ═══════════════════════════════════════════════════
+    //  모바일 전용: 하루 카드 뷰
+    // ═══════════════════════════════════════════════════
+
+    function MobilePersonRow({ icon, meal, ratings = {}, onEdit, onRate, onRecipe }) {
+      const info = CUISINE_INFO[meal?.cuisine || 'custom'];
+      const score = meal?.name ? ((ratings[meal.name]?.likes||0) - (ratings[meal.name]?.dislikes||0)) : 0;
+      return (
+        <div className="border-b border-gray-50 last:border-0">
+          <div onClick={onEdit} className="px-4 py-3 flex items-center gap-2 cursor-pointer active:bg-gray-50">
+            <span className="text-base flex-shrink-0">{icon}</span>
+            <div className="flex-1 min-w-0">
+              {meal?.name
+                ? <span className={`font-semibold text-gray-800 text-sm${score >= 2 ? ' text-green-700' : score <= -1 ? ' text-red-400' : ''}`}>{meal.name}</span>
+                : <span className="text-gray-300 text-sm">+ 추가</span>}
+            </div>
+            {meal?.name && <span className="text-base flex-shrink-0">{info.emoji}</span>}
+          </div>
+          {meal?.name && (
+            <div className="flex gap-1.5 px-4 pb-2.5">
+              <button onClick={e => { e.stopPropagation(); onRecipe?.(meal.name, meal.cuisine); }}
+                className="flex-1 py-1.5 bg-gray-50 rounded-xl text-sm flex items-center justify-center border border-gray-100 active:bg-red-50">📺</button>
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
+                className={`flex-1 py-1.5 rounded-xl text-sm flex items-center justify-center border active:bg-green-50 ${score > 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-100'}`}>👍</button>
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
+                className={`flex-1 py-1.5 rounded-xl text-sm flex items-center justify-center border active:bg-red-50 ${score < 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>👎</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function MobileMealCard({ mealType, meal, hasChildren, ratings, onEditAdult, onEditChild, onEditUnified, onRate, onRecipe, onRegen }) {
+      const unified = !hasChildren;
+      const info = unified ? CUISINE_INFO[meal?.cuisine || 'custom'] : null;
+      const score = unified && meal?.name ? ((ratings[meal.name]?.likes||0) - (ratings[meal.name]?.dislikes||0)) : 0;
+      return (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {/* 식사 유형 헤더 */}
+          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+            <span className="text-lg">{mealType.emoji}</span>
+            <span className="font-bold text-gray-700 text-sm">{mealType.label}</span>
+          </div>
+
+          {unified ? (
+            meal?.name ? (
+              <>
+                <div onClick={onEditUnified} className="px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${info.badge} mr-2`}>{info.label}</span>
+                    <span className={`font-semibold text-gray-800 text-sm${score >= 2 ? ' text-green-700' : ''}`}>{meal.name}</span>
+                  </div>
+                  <span className="text-xl flex-shrink-0">{info.emoji}</span>
+                </div>
+                <div className="flex border-t border-gray-100">
+                  <button onClick={() => onRecipe?.(meal.name, meal.cuisine)} className="flex-1 py-2.5 text-base flex items-center justify-center border-r border-gray-100 active:bg-red-50">📺</button>
+                  <button onClick={() => onRegen('unified')} className="flex-1 py-2.5 text-base flex items-center justify-center border-r border-gray-100 active:bg-orange-50">🎲</button>
+                  <button onClick={() => onRate?.(meal.name, 'like')} className={`flex-1 py-2.5 text-base flex items-center justify-center border-r border-gray-100 active:bg-green-50 ${score > 0 ? 'bg-green-50' : ''}`}>👍</button>
+                  <button onClick={() => onRate?.(meal.name, 'dislike')} className={`flex-1 py-2.5 text-base flex items-center justify-center active:bg-red-50 ${score < 0 ? 'bg-red-50' : ''}`}>👎</button>
+                </div>
+              </>
+            ) : (
+              <button onClick={onEditUnified} className="w-full px-4 py-5 text-gray-300 text-sm flex items-center justify-center active:bg-gray-50">+ 메뉴 추가</button>
+            )
+          ) : (
+            <>
+              <MobilePersonRow icon="👨" meal={meal?.adult} ratings={ratings}
+                onEdit={onEditAdult} onRate={onRate} onRecipe={onRecipe} />
+              <MobilePersonRow icon="🧒" meal={meal?.child} ratings={ratings}
+                onEdit={onEditChild} onRate={onRate} onRecipe={onRecipe} />
+              <button onClick={() => onRegen('both')}
+                className="w-full py-2.5 text-xs text-gray-400 flex items-center justify-center gap-1 border-t border-gray-100 active:bg-orange-50">
+                🎲 <span>둘 다 재생성</span>
+              </button>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    function MobilePlanView({ mealPlan, config, hasChildren, ratings, onEdit, onRate, onRecipe, onRegen }) {
+      const period  = config.period;
+      const todayDow  = new Date().getDay();
+      const todayDayIdx = todayDow === 0 ? 6 : todayDow - 1;
+      const initDay = (() => {
+        for (let i = 0; i < period; i++) { if (i % 7 === todayDayIdx) return i; }
+        return 0;
+      })();
+      const [selectedDay, setSelectedDay] = useState(initDay);
+      const dayRef = React.useRef(null);
+
+      useEffect(() => {
+        if (dayRef.current) {
+          const btn = dayRef.current.querySelector(`[data-day="${selectedDay}"]`);
+          btn?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        }
+      }, [selectedDay]);
+
+      const meal = mealPlan[selectedDay] || {};
+
+      return (
+        <div>
+          {/* 날짜 탭 */}
+          <div ref={dayRef} className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar" style={{scrollbarWidth:'none'}}>
+            {Array.from({length: period}, (_, i) => {
+              const dow = i % 7;
+              const isSat = dow === 5, isSun = dow === 6;
+              const isToday = dow === todayDayIdx && i < 7;
+              const sel = selectedDay === i;
+              return (
+                <button key={i} data-day={i} onClick={() => setSelectedDay(i)}
+                  className={`flex-shrink-0 flex flex-col items-center px-3.5 py-2 rounded-2xl transition-all ${
+                    sel     ? 'bg-orange-500 text-white shadow-md' :
+                    isToday ? 'bg-orange-50 border-2 border-orange-300 text-orange-600' :
+                              'bg-white border border-gray-200 text-gray-600'
+                  }`}>
+                  <span className="text-[10px] font-medium opacity-70">{i+1}일</span>
+                  <span className={`text-sm font-black ${!sel && (isSat ? 'text-blue-500' : isSun ? 'text-red-500' : '')}`}>
+                    {WEEK_DAYS[dow]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 선택된 날의 식단 카드 */}
+          <div className="space-y-3">
+            {MEAL_TYPES.map(mt => (
+              <MobileMealCard key={mt.id}
+                mealType={mt}
+                meal={meal[mt.id]}
+                hasChildren={hasChildren}
+                ratings={ratings}
+                onEditUnified={() => onEdit(selectedDay, mt.id, null)}
+                onEditAdult={() => onEdit(selectedDay, mt.id, 'adult')}
+                onEditChild={() => onEdit(selectedDay, mt.id, 'child')}
+                onRate={onRate}
+                onRecipe={onRecipe}
+                onRegen={(mode) => onRegen(selectedDay, mt.id, mode)}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
     //  설정 화면
     // ═══════════════════════════════════════════════════
     function SetupScreen({ onComplete, restore, onHelp }) {
@@ -2122,81 +2270,93 @@
           {/* 통계 패널 */}
           {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} /></div>}
 
-          {/* 주차 탭 */}
-          {totalWeeks > 1 && (
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-print">
-              {Array.from({length:totalWeeks}, (_,i) => (
-                <button key={i} onClick={() => setWeek(i)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${week===i ? 'bg-orange-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}>
-                  {i+1}주차
-                </button>
-              ))}
-            </div>
-          )}
+          {/* ── 모바일: 날짜탭 + 하루 카드 뷰 ── */}
+          {IS_TOUCH ? (
+            <MobilePlanView
+              mealPlan={mealPlan}
+              config={config}
+              hasChildren={children}
+              ratings={ratings}
+              onEdit={(day, mt, who) => setEdit({ day, mt, who })}
+              onRate={onRate}
+              onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
+              onRegen={regenOne}
+            />
+          ) : (
+            <>
+              {/* 주차 탭 (데스크탑) */}
+              {totalWeeks > 1 && (
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-print">
+                  {Array.from({length:totalWeeks}, (_,i) => (
+                    <button key={i} onClick={() => setWeek(i)}
+                      className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${week===i ? 'bg-orange-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}>
+                      {i+1}주차
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          {/* 식단 그리드 */}
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
-            <div className="week-scroll">
-              <div style={{display:'grid', gridTemplateColumns:`60px repeat(${daysInWeek}, minmax(90px,1fr))`}}>
-                {/* 코너 */}
-                <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
-                {/* 날짜 헤더 */}
-                {Array.from({length:daysInWeek}, (_,i) => {
-                  const di = weekStart + i;
-                  const dow = di % 7;
-                  const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
-                  return (
-                    <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
-                      <div className={`text-[10px] font-medium ${isToday ? 'text-orange-400' : 'text-gray-400'}`}>{isToday ? '오늘' : `${di+1}일차`}</div>
-                      <div className={`font-bold text-sm ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'today-header font-black' : 'text-gray-700'}`}>{WEEK_DAYS[dow]}</div>
-                    </div>
-                  );
-                })}
-
-                {/* 식사 행 */}
-                {MEAL_TYPES.map(mt => (
-                  <React.Fragment key={mt.id}>
-                    <div className="p-2.5 flex flex-col items-center justify-center border-b border-r border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                      <span className="text-xl">{mt.emoji}</span>
-                      <span className="text-[10px] font-bold text-gray-500 mt-0.5">{mt.label}</span>
-                    </div>
+              {/* 식단 그리드 (데스크탑) */}
+              <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
+                <div className="week-scroll">
+                  <div style={{display:'grid', gridTemplateColumns:`60px repeat(${daysInWeek}, minmax(90px,1fr))`}}>
+                    <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
                     {Array.from({length:daysInWeek}, (_,i) => {
                       const di = weekStart + i;
                       const dow = di % 7;
-                      const isToday = dow === todayIdx && week === 0;
-                      const meal = mealPlan[di]?.[mt.id];
+                      const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
                       return (
-                        <div key={i} className={`p-1.5 border-b border-l border-gray-100 ${isToday ? 'today-col' : ''}`}>
-                          <MealCell
-                            meal={meal}
-                            hasChildren={children}
-                            onClick={children ? undefined : () => setEdit({ day:di, mt:mt.id, who:null })}
-                            onClickAdult={children ? () => setEdit({ day:di, mt:mt.id, who:'adult' }) : undefined}
-                            onClickChild={children ? () => setEdit({ day:di, mt:mt.id, who:'child' }) : undefined}
-                            onRegen={(mode) => regenOne(di, mt.id, mode)}
-                            onRate={onRate}
-                            onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
-                            ratings={ratings}
-                          />
+                        <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
+                          <div className={`text-[10px] font-medium ${isToday ? 'text-orange-400' : 'text-gray-400'}`}>{isToday ? '오늘' : `${di+1}일차`}</div>
+                          <div className={`font-bold text-sm ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'today-header font-black' : 'text-gray-700'}`}>{WEEK_DAYS[dow]}</div>
                         </div>
                       );
                     })}
-                  </React.Fragment>
-                ))}
+                    {MEAL_TYPES.map(mt => (
+                      <React.Fragment key={mt.id}>
+                        <div className="p-2.5 flex flex-col items-center justify-center border-b border-r border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                          <span className="text-xl">{mt.emoji}</span>
+                          <span className="text-[10px] font-bold text-gray-500 mt-0.5">{mt.label}</span>
+                        </div>
+                        {Array.from({length:daysInWeek}, (_,i) => {
+                          const di = weekStart + i;
+                          const dow = di % 7;
+                          const isToday = dow === todayIdx && week === 0;
+                          const meal = mealPlan[di]?.[mt.id];
+                          return (
+                            <div key={i} className={`p-1.5 border-b border-l border-gray-100 ${isToday ? 'today-col' : ''}`}>
+                              <MealCell
+                                meal={meal}
+                                hasChildren={children}
+                                onClick={children ? undefined : () => setEdit({ day:di, mt:mt.id, who:null })}
+                                onClickAdult={children ? () => setEdit({ day:di, mt:mt.id, who:'adult' }) : undefined}
+                                onClickChild={children ? () => setEdit({ day:di, mt:mt.id, who:'child' }) : undefined}
+                                onRegen={(mode) => regenOne(di, mt.id, mode)}
+                                onRate={onRate}
+                                onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
+                                ratings={ratings}
+                              />
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* 범례 */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 no-print">
-            {config.cuisines.map(c => (
-              <span key={c} className={`px-3 py-1 rounded-full text-xs font-medium border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
-                {CUISINE_INFO[c].emoji} {CUISINE_INFO[c].label}
-              </span>
-            ))}
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">✏️ 직접입력</span>
-            <span className="text-xs text-gray-400 ml-auto hidden sm:block">🎲 셀 호버 시 개별 재생성 · 클릭 시 메뉴 변경</span>
-          </div>
+              {/* 범례 */}
+              <div className="mt-4 flex flex-wrap items-center gap-2 no-print">
+                {config.cuisines.map(c => (
+                  <span key={c} className={`px-3 py-1 rounded-full text-xs font-medium border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
+                    {CUISINE_INFO[c].emoji} {CUISINE_INFO[c].label}
+                  </span>
+                ))}
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">✏️ 직접입력</span>
+                <span className="text-xs text-gray-400 ml-auto">🎲 셀 호버 시 개별 재생성 · 클릭 시 메뉴 변경</span>
+              </div>
+            </>
+          )}
 
           {/* 가족 요약 */}
           <div className="mt-3 flex flex-wrap gap-2 no-print">
