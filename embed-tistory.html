@@ -1,73 +1,82 @@
 <!--
-  ╔══════════════════════════════════════════════════════╗
-  ║  우리 가족 식단 플래너 — 티스토리 임베드 코드       ║
-  ║  티스토리 글쓰기 → HTML 편집 모드에서 붙여넣기      ║
-  ╚══════════════════════════════════════════════════════╝
-
-  [사용 방법]
-  1. 티스토리 포스팅 작성 화면 열기
-  2. 우상단 "기본 모드" → "HTML" 탭 클릭
-  3. 아래 코드 전체 복사 → 붙여넣기 → 저장
-  4. 미리보기에서 앱이 정상 표시되는지 확인
-
-  [주의]
-  - 앱 URL(src)은 GitHub Pages 배포 주소로 자동 설정됨
-  - AdSense 광고는 이 코드 위/아래에 티스토리 설정에서 삽입
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  우리 가족 식단 플래너 — 티스토리 임베드 코드 (최종본)     ║
+  ╠══════════════════════════════════════════════════════════════╣
+  ║  [삽입 방법]                                                 ║
+  ║  1. 티스토리 글쓰기 → 우상단 "HTML" 탭 클릭               ║
+  ║  2. 아래 코드 전체(<!-- 제외) 복사 → 붙여넣기              ║
+  ║  3. "완료" 클릭 후 발행                                     ║
+  ╚══════════════════════════════════════════════════════════════╝
 -->
 
-<!-- ① 반응형 래퍼 + iframe -->
-<div id="fmp-wrap" style="
+<!-- ① 스타일 -->
+<style>
+#fmp-wrap {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto 24px;
+  max-width: 860px;
+  margin: 16px auto 24px;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
   border: 1px solid #f0f0f0;
-  background: #fff;
-">
+  background: #fff8f4;
+}
+#fmp-frame {
+  display: block;
+  border: none;
+  width: 100%;
+  height: 820px;
+  min-height: 600px;
+}
+#fmp-open-btn {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 28px;
+  padding: 11px 28px;
+  background: #f97316;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(249,115,22,0.35);
+  text-align: center;
+}
+@media (max-width: 600px) {
+  #fmp-frame { height: 680px; }
+  #fmp-wrap  { border-radius: 12px; margin: 8px auto 16px; }
+}
+</style>
+
+<!-- ② iframe -->
+<div id="fmp-wrap">
   <iframe
     id="fmp-frame"
     src="https://peterpark3832.github.io/Family-meal-planner/"
-    width="100%"
-    height="820"
-    frameborder="0"
-    scrolling="auto"
     allow="clipboard-write; clipboard-read"
     title="우리 가족 식단 플래너"
     loading="lazy"
-    style="display:block; border:none; width:100%; min-height:820px;"
+    scrolling="auto"
+    frameborder="0"
   ></iframe>
 </div>
 
-<!-- ② 새 탭 열기 버튼 (모바일 UX 보조) -->
-<div style="text-align:center; margin-bottom:32px;">
-  <a
-    href="https://peterpark3832.github.io/Family-meal-planner/"
-    target="_blank"
-    rel="noopener noreferrer"
-    style="
-      display: inline-block;
-      padding: 10px 24px;
-      background: #f97316;
-      color: #fff;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-      box-shadow: 0 2px 8px rgba(249,115,22,0.3);
-    "
-  >🍽️ 새 탭에서 크게 열기</a>
-</div>
+<!-- ③ 새 탭 열기 버튼 -->
+<a id="fmp-open-btn"
+  href="https://peterpark3832.github.io/Family-meal-planner/"
+  target="_blank"
+  rel="noopener noreferrer">
+  🍽️ 새 탭에서 크게 열기 →
+</a>
 
-<!-- ③ iframe 높이 자동 조정 스크립트 -->
+<!-- ④ 높이 자동 조정 (앱에서 postMessage로 전달) -->
 <script>
-(function() {
+(function () {
   var frame = document.getElementById('fmp-frame');
   if (!frame) return;
-  window.addEventListener('message', function(e) {
+  window.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'fmp-resize' && typeof e.data.height === 'number') {
-      var h = Math.max(600, Math.min(e.data.height, 2400));
+      var h = Math.max(580, Math.min(e.data.height, 2800));
       frame.style.height = h + 'px';
     }
   });
