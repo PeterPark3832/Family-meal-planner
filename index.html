@@ -549,10 +549,47 @@
     //  컴포넌트: 식사 셀 (통합 / 분리 모드 지원)
     // ═══════════════════════════════════════════════════
 
+    // 터치 기기 감지 (모바일/태블릿)
+    const IS_TOUCH = typeof window !== 'undefined' && window.matchMedia?.('(hover: none)').matches;
+
     // 분리 모드: 한 사람의 하프-셀
     function HalfCell({ meal, icon, onClick, onRate, onRecipe, ratings = {} }) {
       const info = CUISINE_INFO[meal?.cuisine || 'custom'];
       const score = meal?.name ? ((ratings[meal.name]?.likes||0) - (ratings[meal.name]?.dislikes||0)) : 0;
+
+      // ── 터치(모바일) 레이아웃: 셀 + 아래 액션바 ──
+      if (IS_TOUCH) {
+        return (
+          <div>
+            <div onClick={onClick}
+              className={`meal-card cursor-pointer border rounded-lg px-1.5 py-1 transition-all ${
+                meal?.name
+                  ? `${info.border} ${info.bg}${score >= 2 ? ' ring-1 ring-green-300' : score <= -1 ? ' ring-1 ring-red-200' : ''}`
+                  : 'border-dashed border-gray-200'
+              }`}>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] flex-shrink-0">{icon}</span>
+                <span className="text-[11px] font-semibold text-gray-800 leading-tight truncate flex-1">
+                  {meal?.name || <span className="text-gray-300">+ 추가</span>}
+                </span>
+                {meal?.name && <span className="text-[10px] flex-shrink-0">{info.emoji}</span>}
+              </div>
+            </div>
+            {meal?.name && (
+              <div className="flex gap-0.5 mt-0.5">
+                <button onClick={e => { e.stopPropagation(); onRecipe?.(meal.name, meal.cuisine); }}
+                  className="flex-1 h-5 bg-white border border-gray-200 rounded text-[9px] flex items-center justify-center hover:bg-red-50 active:bg-red-100">📺</button>
+                <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
+                  className={`flex-1 h-5 bg-white border rounded text-[9px] flex items-center justify-center active:bg-green-100 ${score > 0 ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}>👍</button>
+                <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
+                  className={`flex-1 h-5 bg-white border rounded text-[9px] flex items-center justify-center active:bg-red-100 ${score < 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>👎</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ── 데스크탑 레이아웃: 호버 오버레이 버튼 ──
       return (
         <div className="relative">
           <div onClick={onClick}
@@ -594,10 +631,16 @@
           <div className="cell-wrap relative space-y-1">
             <HalfCell meal={meal?.adult} icon="👨" onClick={onClickAdult} onRate={onRate} onRecipe={onRecipe} ratings={ratings} />
             <HalfCell meal={meal?.child} icon="🧒" onClick={onClickChild} onRate={onRate} onRecipe={onRecipe} ratings={ratings} />
-            <button
-              onClick={(e) => { e.stopPropagation(); onRegen('both'); }}
-              className="dice-btn absolute top-0.5 right-0.5 w-5 h-5 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-orange-50 hover:border-orange-300"
-              title="둘 다 재생성">🎲</button>
+            {IS_TOUCH ? (
+              <button onClick={e => { e.stopPropagation(); onRegen('both'); }}
+                className="w-full mt-0.5 py-1 bg-white border border-gray-200 rounded text-[9px] text-gray-500 flex items-center justify-center gap-1 active:bg-orange-50">
+                🎲 <span>둘 다 재생성</span>
+              </button>
+            ) : (
+              <button onClick={e => { e.stopPropagation(); onRegen('both'); }}
+                className="dice-btn absolute top-0.5 right-0.5 w-5 h-5 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] shadow-sm hover:bg-orange-50 hover:border-orange-300"
+                title="둘 다 재생성">🎲</button>
+            )}
           </div>
         );
       }
@@ -608,11 +651,41 @@
       if (!meal?.name) {
         return (
           <div onClick={onClick}
-            className="meal-card border-2 border-dashed border-gray-200 rounded-xl p-2 min-h-[72px] flex items-center justify-center cursor-pointer hover:border-orange-300 hover:bg-orange-50">
+            className="meal-card border-2 border-dashed border-gray-200 rounded-xl p-2 min-h-[60px] flex items-center justify-center cursor-pointer hover:border-orange-300 hover:bg-orange-50 active:bg-orange-50">
             <span className="text-gray-300 text-xs">+ 추가</span>
           </div>
         );
       }
+
+      // ── 통합 모드 / 터치 레이아웃 ──
+      if (IS_TOUCH) {
+        return (
+          <div className={`border-2 ${info.border} ${info.bg} rounded-xl overflow-hidden${score >= 2 ? ' ring-2 ring-green-300' : score <= -1 ? ' ring-2 ring-red-200' : ''}`}>
+            <div onClick={onClick} className="meal-card p-2 cursor-pointer active:opacity-80">
+              <div className="flex items-start justify-between gap-1">
+                <span className="text-xs font-semibold text-gray-800 leading-tight">{meal.name}</span>
+                <span className="text-sm flex-shrink-0">{info.emoji}</span>
+              </div>
+              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
+                {score >= 2 && <span className="text-[9px] text-green-600">👍</span>}
+              </div>
+            </div>
+            <div className="flex border-t border-gray-100 bg-white/60">
+              <button onClick={e => { e.stopPropagation(); onRecipe?.(meal.name, meal.cuisine); }}
+                className="flex-1 py-1.5 text-xs flex items-center justify-center border-r border-gray-100 active:bg-red-50">📺</button>
+              <button onClick={e => { e.stopPropagation(); onRegen('unified'); }}
+                className="flex-1 py-1.5 text-xs flex items-center justify-center border-r border-gray-100 active:bg-orange-50">🎲</button>
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'like'); }}
+                className={`flex-1 py-1.5 text-xs flex items-center justify-center border-r border-gray-100 active:bg-green-50 ${score > 0 ? 'bg-green-50' : ''}`}>👍</button>
+              <button onClick={e => { e.stopPropagation(); onRate?.(meal.name, 'dislike'); }}
+                className={`flex-1 py-1.5 text-xs flex items-center justify-center active:bg-red-50 ${score < 0 ? 'bg-red-50' : ''}`}>👎</button>
+            </div>
+          </div>
+        );
+      }
+
+      // ── 통합 모드 / 데스크탑 레이아웃 ──
       return (
         <div className="cell-wrap relative">
           <div onClick={onClick}
