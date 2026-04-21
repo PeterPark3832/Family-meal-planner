@@ -67,6 +67,11 @@
     //  상수
     // ═══════════════════════════════════════════════════
     const SAVE_KEY   = 'fmp_v2';
+
+    // 쿠팡 파트너스
+    const COUPANG_ID  = 'AF6521647';
+    const coupangUrl  = (q) =>
+      `https://link.coupang.com/a/${COUPANG_ID}?url=${encodeURIComponent('https://www.coupang.com/np/search?q=' + encodeURIComponent(q))}`;
     const CUSTOM_KEY = 'fmp_custom_meals';
     const RATING_KEY = 'fmp_ratings';
 
@@ -1395,35 +1400,45 @@
                       <p className="text-xs font-bold text-gray-500 mb-2">{CAT_EMOJI[cat]} {cat}</p>
                       <div className="space-y-1.5">
                         {grouped[cat].map(item => (
-                          <button key={item} onClick={() => toggle(item)}
-                            className={`w-full flex items-start gap-2 px-3 py-2 rounded-xl border text-left transition-all ${
+                          <div key={item}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                               checked.has(item)
-                                ? 'bg-gray-50 border-gray-200 text-gray-300'
-                                : 'bg-white border-gray-200 text-gray-700 hover:border-green-300 hover:bg-green-50'
+                                ? 'bg-gray-50 border-gray-200'
+                                : 'bg-white border-gray-200 hover:border-green-300 hover:bg-green-50'
                             }`}>
-                            <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] mt-0.5 ${checked.has(item) ? 'bg-gray-300 border-gray-300 text-white' : 'border-gray-300'}`}>
-                              {checked.has(item) ? '✓' : ''}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <span className={`text-sm font-medium ${checked.has(item) ? 'line-through' : ''}`}>{item}</span>
-                              {/* 이 재료가 쓰이는 메뉴 태그 */}
-                              {!checked.has(item) && ingToMeals[item] && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {ingToMeals[item].slice(0, 4).map(meal => {
-                                    const c = [...MEALS].find(m => m.name === meal)?.cuisine || 'custom';
-                                    return (
-                                      <span key={meal} className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
-                                        {meal}
-                                      </span>
-                                    );
-                                  })}
-                                  {ingToMeals[item].length > 4 && (
-                                    <span className="text-[9px] text-gray-400">+{ingToMeals[item].length - 4}</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </button>
+                            {/* 체크 영역 */}
+                            <button onClick={() => toggle(item)} className="flex items-start gap-2 flex-1 text-left min-w-0">
+                              <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] mt-0.5 ${checked.has(item) ? 'bg-gray-300 border-gray-300 text-white' : 'border-gray-300'}`}>
+                                {checked.has(item) ? '✓' : ''}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-sm font-medium ${checked.has(item) ? 'line-through text-gray-300' : 'text-gray-700'}`}>{item}</span>
+                                {!checked.has(item) && ingToMeals[item] && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {ingToMeals[item].slice(0, 4).map(meal => {
+                                      const c = [...MEALS].find(m => m.name === meal)?.cuisine || 'custom';
+                                      return (
+                                        <span key={meal} className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
+                                          {meal}
+                                        </span>
+                                      );
+                                    })}
+                                    {ingToMeals[item].length > 4 && (
+                                      <span className="text-[9px] text-gray-400">+{ingToMeals[item].length - 4}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                            {/* 쿠팡 버튼 */}
+                            {!checked.has(item) && (
+                              <a href={coupangUrl(item)} target="_blank" rel="noopener noreferrer sponsored"
+                                onClick={e => e.stopPropagation()}
+                                className="flex-shrink-0 text-[10px] px-2 py-1 bg-red-50 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-100 hover:text-red-600 transition-all whitespace-nowrap">
+                                쿠팡↗
+                              </a>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1454,6 +1469,12 @@
                             </button>
                           ))}
                         </div>
+                        <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                          <a href={coupangUrl(name + ' 재료')} target="_blank" rel="noopener noreferrer sponsored"
+                            className="inline-flex items-center gap-1 text-[11px] text-red-500 font-semibold hover:text-red-600 transition-colors">
+                            🛒 쿠팡에서 재료 장보기 →
+                          </a>
+                        </div>
                       </div>
                     );
                   })}
@@ -1462,14 +1483,17 @@
             </div>
 
             {/* 하단 */}
-            {view === 'category' && checked.size > 0 && (
-              <div className="p-3 border-t border-gray-100 bg-gray-50">
+            <div className="border-t border-gray-100 bg-gray-50">
+              {view === 'category' && checked.size > 0 && (
                 <button onClick={() => setChecked(new Set())}
-                  className="w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                  className="w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors border-b border-gray-100">
                   체크 모두 해제
                 </button>
-              </div>
-            )}
+              )}
+              <p className="text-center text-[10px] text-gray-400 py-2 px-4">
+                쿠팡 파트너스 활동의 일환으로 수수료를 받을 수 있습니다
+              </p>
+            </div>
           </div>
         </div>
       );
