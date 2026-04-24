@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff7ed"/>
+      <stop offset="50%" style="stop-color:#fed7aa"/>
+      <stop offset="100%" style="stop-color:#fde68a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#fff7ed;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 장식 원 -->
+  <circle cx="1100" cy="80"  r="160" fill="#f97316" opacity="0.08"/>
+  <circle cx="100"  cy="550" r="120" fill="#f97316" opacity="0.08"/>
+  <circle cx="1050" cy="550" r="80"  fill="#fb923c" opacity="0.10"/>
+
+  <!-- 메인 카드 -->
+  <rect x="80" y="80" width="1040" height="470" rx="32" fill="url(#card)" opacity="0.92"/>
+  <rect x="80" y="80" width="1040" height="470" rx="32" fill="none" stroke="#fed7aa" stroke-width="2"/>
+
+  <!-- 상단 컬러 바 -->
+  <rect x="80" y="80" width="1040" height="8" rx="4" fill="#f97316"/>
+
+  <!-- 이모지 + 제목 -->
+  <text x="600" y="220" font-family="sans-serif" font-size="80" text-anchor="middle">🍽️</text>
+  <text x="600" y="310" font-family="'Noto Sans KR', sans-serif" font-size="56" font-weight="900" fill="#1c1917" text-anchor="middle" letter-spacing="-1">우리 가족 식단 플래너</text>
+  <text x="600" y="375" font-family="sans-serif" font-size="28" fill="#78716c" text-anchor="middle">가족 맞춤형 주간 식단 자동 생성 · 장보기 목록 · 레시피 검색</text>
+
+  <!-- 태그 뱃지 3개 -->
+  <rect x="248" y="415" width="180" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+  <text x="338" y="443" font-family="sans-serif" font-size="22" fill="#ea580c" text-anchor="middle">✅ 무료</text>
+
+  <rect x="510" y="415" width="180" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+  <text x="600" y="443" font-family="sans-serif" font-size="22" fill="#ea580c" text-anchor="middle">📱 모바일 지원</text>
+
+  <rect x="772" y="415" width="180" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+  <text x="862" y="443" font-family="sans-serif" font-size="22" fill="#ea580c" text-anchor="middle">🛒 장보기 연동</text>
+
+  <!-- URL -->
+  <text x="600" y="515" font-family="monospace" font-size="20" fill="#a8a29e" text-anchor="middle">peterpark3832.github.io/Family-meal-planner</text>
+</svg>
