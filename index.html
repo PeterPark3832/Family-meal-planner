@@ -68,10 +68,37 @@
     // ═══════════════════════════════════════════════════
     const SAVE_KEY   = 'fmp_v2';
 
-    // 쿠팡 파트너스
-    const COUPANG_ID  = 'AF6521647';
-    const coupangUrl  = (q) =>
-      `https://link.coupang.com/a/${COUPANG_ID}?url=${encodeURIComponent('https://www.coupang.com/np/search?q=' + encodeURIComponent(q))}`;
+    // 쿠팡 파트너스 — 카테고리별 확정 링크
+    const COUPANG_BASE = 'https://link.coupang.com/a/';
+    const COUPANG_CAT = {
+      '채소류':        'evvkSH',
+      '육류':          'evvlDY',
+      '해산물':        'evvms3',
+      '유제품/계란':   'evvmQt',  // 유제품 기본
+      '양념/소스':     'evvnhs',  // 양념 기본
+      '가공식품':      'evvnHG',
+      '면/밥류':       'evvn7C',  // 면 기본
+      '두부/콩류':     'evvoO6',  // 두부 기본
+      '버섯류':        'evvppV',
+      '견과류/건과일': 'evvpD2',
+      '기타':          'evvqfy',
+    };
+    // 일부 재료는 더 정확한 링크로 세분화
+    const COUPANG_ING_OVERRIDE = {
+      '계란':'evvqCc', '달걀':'evvqCc',
+      '쌀':'evvosX', '현미':'evvosX', '잡곡':'evvosX', '밥':'evvosX',
+      '콩':'evvo6m', '두유':'evvo6m', '낫토':'evvo6m', '검은콩':'evvo6m',
+      '케첩':'evvqYV', '마요네즈':'evvqYV', '굴소스':'evvqYV',
+      '스리라차소스':'evvqYV', '칠리소스':'evvqYV', '우스터소스':'evvqYV',
+      '피시소스':'evvqYV', '데리야끼소스':'evvqYV', '고추기름':'evvqYV',
+    };
+    const coupangUrl = (ingredient) => {
+      const code = COUPANG_ING_OVERRIDE[ingredient]
+        || COUPANG_CAT[INGREDIENT_CATEGORY[ingredient]]
+        || 'evvqfy';
+      return COUPANG_BASE + code;
+    };
+    const coupangMealUrl = () => COUPANG_BASE + 'evvqfy'; // 식재료 일반
     const CUSTOM_KEY = 'fmp_custom_meals';
     const RATING_KEY = 'fmp_ratings';
 
@@ -1470,7 +1497,7 @@
                           ))}
                         </div>
                         <div className="mt-2.5 pt-2.5 border-t border-gray-100">
-                          <a href={coupangUrl(name + ' 재료')} target="_blank" rel="noopener noreferrer sponsored"
+                          <a href={coupangMealUrl()} target="_blank" rel="noopener noreferrer sponsored"
                             className="inline-flex items-center gap-1 text-[11px] text-red-500 font-semibold hover:text-red-600 transition-colors">
                             🛒 쿠팡에서 재료 장보기 →
                           </a>
