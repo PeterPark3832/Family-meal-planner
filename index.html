@@ -31,9 +31,6 @@
   <!-- 카카오톡 공유 최적화 -->
   <meta property="og:image:alt" content="우리 가족 식단 플래너 — 식단 자동 생성 앱" />
 
-  <!-- 쿠팡 파트너스 배너 -->
-  <script async src="https://ads-partners.coupang.com/g.js"></script>
-
   <!-- Google Analytics GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SWZWCDYXSD"></script>
   <script>
@@ -98,27 +95,6 @@
 <body class="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 min-h-screen">
   <div id="root"></div>
 
-  <!-- 쿠팡 파트너스 배너 — React 밖에서 딱 한 번 생성, show/hide로만 제어 -->
-  <div id="coupang-banner-static" style="display:none; max-width:1024px; margin:0 auto; padding:0 12px 32px;">
-    <div style="background:white; border-radius:16px; border:1px solid #f3f4f6; box-shadow:0 1px 4px rgba(0,0,0,0.07); overflow:hidden;">
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px 8px; border-bottom:1px solid #f9fafb;">
-        <span style="font-size:12px; font-weight:700; color:#6b7280;">🛒 오늘의 추천 식재료</span>
-        <span style="font-size:10px; color:#d1d5db;">쿠팡 파트너스</span>
-      </div>
-      <div style="padding:10px 12px 6px; overflow:hidden; min-height:148px;">
-        <script>
-          (function tryInit(n) {
-            if (typeof PartnersCoupang !== 'undefined') {
-              new PartnersCoupang.G({"id":983643,"template":"carousel","trackingCode":"AF6521647","width":"680","height":"140","tsource":""});
-            } else if (n < 30) {
-              setTimeout(function(){ tryInit(n+1); }, 200);
-            }
-          })(0);
-        </script>
-      </div>
-      <p style="font-size:9px; color:#d1d5db; text-align:right; padding:2px 14px 8px; margin:0;">쿠팡 파트너스 활동을 통해 수수료를 받을 수 있습니다</p>
-    </div>
-  </div>
 
   <script type="text/babel">
     const { useState, useMemo, useCallback, useEffect, useRef } = React;
@@ -1578,9 +1554,18 @@
                   체크 모두 해제
                 </button>
               )}
-              <p className="text-center text-[10px] text-gray-400 py-2 px-4">
-                쿠팡 파트너스 활동의 일환으로 수수료를 받을 수 있습니다
-              </p>
+              {/* 쿠팡 배너 — 별도 HTML로 격리, iframe으로 표시 */}
+              <div className="px-3 pt-2 pb-1">
+                <p className="text-[10px] text-gray-400 mb-1.5">🛒 추천 식재료</p>
+                <iframe
+                  src="./coupang-banner.html"
+                  width="100%" height="158"
+                  frameBorder="0" scrolling="no"
+                  style={{border:'none', borderRadius:'8px', display:'block'}}
+                  title="쿠팡 추천 상품"
+                />
+                <p className="text-[9px] text-gray-300 mt-1 text-right">쿠팡 파트너스 활동을 통해 수수료를 받을 수 있습니다</p>
+              </div>
             </div>
           </div>
         </div>
@@ -2212,12 +2197,6 @@
 
       const totalWeeks  = Math.ceil(config.period / 7);
 
-      // 식단 화면 진입 시 쿠팡 배너 표시, 이탈 시 숨김
-      useEffect(() => {
-        const el = document.getElementById('coupang-banner-static');
-        if (el) el.style.display = 'block';
-        return () => { if (el) el.style.display = 'none'; };
-      }, []);
       const weekStart   = week * 7;
       const weekEnd     = Math.min(weekStart + 7, config.period);
       const daysInWeek  = weekEnd - weekStart;
@@ -2487,7 +2466,6 @@
             ))}
           </div>
 
-          {/* 쿠팡 배너는 React 바깥 정적 div로 관리 — show/hide only */}
 
           {/* 편집 모달 */}
           {editTarget && (
