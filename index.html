@@ -31,6 +31,9 @@
   <!-- 카카오톡 공유 최적화 -->
   <meta property="og:image:alt" content="우리 가족 식단 플래너 — 식단 자동 생성 앱" />
 
+  <!-- 쿠팡 파트너스 배너 -->
+  <script async src="https://ads-partners.coupang.com/g.js"></script>
+
   <!-- Google Analytics GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SWZWCDYXSD"></script>
   <script>
@@ -1324,6 +1327,36 @@
     }
 
     // ═══════════════════════════════════════════════════
+    //  컴포넌트: 쿠팡 파트너스 배너
+    // ═══════════════════════════════════════════════════
+    function CoupangBanner() {
+      const ref = React.useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el || el.dataset.init) return;
+        el.dataset.init = '1';
+        const tryRender = (attempts = 0) => {
+          if (typeof PartnersCoupang !== 'undefined') {
+            const w = Math.min(el.offsetWidth || 680, 680);
+            const s = document.createElement('script');
+            s.text = `new PartnersCoupang.G({"id":983643,"template":"carousel","trackingCode":"AF6521647","width":"${w}","height":"140","tsource":""});`;
+            el.appendChild(s);
+          } else if (attempts < 20) {
+            setTimeout(() => tryRender(attempts + 1), 200);
+          }
+        };
+        tryRender();
+      }, []);
+      return (
+        <div className="px-4 pt-3 pb-1">
+          <p className="text-[10px] text-gray-400 mb-1.5">쿠팡 추천 상품</p>
+          <div ref={ref} style={{minHeight:'144px', borderRadius:'10px', overflow:'hidden'}} />
+          <p className="text-[9px] text-gray-300 mt-1 text-right">쿠팡 파트너스 활동을 통해 수수료를 받을 수 있습니다</p>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
     //  컴포넌트: 장보기 목록 모달
     // ═══════════════════════════════════════════════════
     function ShoppingListModal({ mealPlan, period, hasChildren, onClose }) {
@@ -1447,8 +1480,11 @@
               </div>
             </div>
 
+            {/* 쿠팡 배너 */}
+            <CoupangBanner />
+
             {/* 본문 */}
-            <div className="overflow-y-auto" style={{maxHeight:'60vh'}}>
+            <div className="overflow-y-auto" style={{maxHeight:'55vh'}}>
               {totalCount === 0 ? (
                 <div className="text-center py-12 text-gray-400">
                   <div className="text-3xl mb-2">🧺</div>
