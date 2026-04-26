@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://peterpark3832.github.io/Family-meal-planner/sitemap.xml

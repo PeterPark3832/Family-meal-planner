@@ -11,6 +11,23 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://peterpark3832.github.io/Family-meal-planner/" />
 
+  <!-- Schema.org 구조화 데이터 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "우리 가족 식단 플래너",
+    "description": "가족 구성원·나이·알레르기에 맞는 주간 식단을 자동으로 만들어드립니다. 장보기 목록·레시피 검색·식단 평가까지 무료 제공.",
+    "url": "https://peterpark3832.github.io/Family-meal-planner/",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "All",
+    "inLanguage": "ko-KR",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+    "featureList": ["주간 식단 자동 생성", "가족 맞춤 필터", "알레르기 제외", "장보기 목록", "레시피 검색", "칼로리 표시"]
+  }
+  </script>
+
   <!-- Open Graph (카카오톡·페이스북·네이버 공유) -->
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://peterpark3832.github.io/Family-meal-planner/" />
@@ -405,6 +422,72 @@
 
     const TEMPLATE_KEY = 'fmp_templates';
 
+    // ── 칼로리 룩업 (1인분 기준 kcal) ──────────────────
+    const MEAL_CALORIES = {
+      // 한식 아침
+      '미역국+밥':380,'된장국+밥':340,'계란프라이+밥':480,'흰죽':200,'야채죽':180,
+      '호박죽':190,'김치볶음밥':560,'참치마요덮밥':580,'떡국':440,'만두국':420,
+      '황태해장국':280,'콩나물국밥':360,'설렁탕':420,'곰탕':380,'해장국':350,
+      '전복죽':320,'팥죽':380,'녹두죽':220,'찰밥':400,'주먹밥':350,
+      // 한식 점심/저녁
+      '김치찌개':380,'된장찌개':320,'순두부찌개':290,'부대찌개':600,'청국장찌개':340,
+      '불고기':420,'제육볶음':520,'갈비찜':580,'닭볶음탕':480,'잡채':440,
+      '비빔밥':520,'볶음밥':550,'삼겹살구이':700,'두부조림':280,'계란찜':180,
+      '감자조림':220,'고등어조림':360,'오징어볶음':380,'삼치구이':350,
+      '참치김치찌개':400,'돼지불백':540,'소불고기덮밥':580,'닭갈비':520,
+      '순대국밥':560,'냉면':500,'떡볶이':480,'육개장':350,'해물파전':380,
+      '김치전':320,'감자전':300,'녹두전':340,'동태찌개':300,'대구탕':280,
+      '갈비탕':520,'꼬리곰탕':480,'우족탕':500,'낙지볶음':340,'주꾸미볶음':320,
+      '아귀찜':380,'해물찜':400,'꽃게탕':350,'대게찜':380,'전복구이':320,
+      '삼계탕':580,'닭한마리':520,'닭갈비':520,'찜닭':500,'닭강정':560,
+      '콩국수':380,'물냉면':460,'비빔냉면':520,'막국수':420,'잔치국수':380,
+      '쌈밥':480,'보쌈':600,'족발':680,'곱창볶음':520,'대창볶음':560,
+      '해물된장찌개':340,'차돌박이구이':620,'소고기뭇국':350,'미역국':180,
+      '시금치된장국':160,'북엇국':200,'버섯들깨탕':280,
+      // 양식
+      '크림파스타':650,'토마토파스타':500,'볼로네제파스타':580,'카르보나라':700,
+      '페스토파스타':580,'알리오올리오':520,'봉골레파스타':480,
+      '스테이크':600,'함박스테이크':550,'치킨스테이크':480,'연어스테이크':450,
+      '그라탱':550,'오믈렛':380,'클럽샌드위치':520,'BLT샌드위치':450,
+      '버거':600,'피자':650,'리조또':500,'뇨끼':520,'크로크무슈':480,
+      '베이컨에그':450,'프렌치토스트':380,'팬케이크':420,'와플':400,
+      '치킨윙':600,'바베큐립':720,'폼프리트':480,'타코':520,'부리또':580,
+      '나초':480,'케사디야':520,'치킨샐러드':380,'시저샐러드':320,
+      '미네스트로네':280,'클램차우더':420,'양파수프':260,'포타주':300,
+      '스콘':380,'크루아상샌드위치':480,
+      // 중식
+      '짜장면':680,'짬뽕':580,'탕수육':700,'깐풍기':650,'마파두부':380,
+      '볶음밥(중식)':560,'팔보채':450,'동파육':680,'꽃빵+요리':500,'딤섬':380,
+      '양장피':400,'오향장육':500,'깐쇼새우':580,'유린기':520,'라조기':560,
+      '마라탕':580,'훠궈':600,'샤오롱바오':380,'군만두':420,
+      // 일식
+      '초밥':480,'돈가스':650,'규동':580,'오야코동':580,'가라아게':560,
+      '샤부샤부':430,'야키소바':520,'오니기리':300,'타코야키':380,
+      '라멘':580,'우동':450,'소바':400,'가츠동':680,'텐동':700,
+      '스키야키':550,'미소라멘':560,'돈코츠라멘':680,'데리야키치킨':480,
+      '모듬사시미':380,'연어사시미':360,'참치사시미':320,'나베':500,
+    };
+    const getCalories = (name) => MEAL_CALORIES[name] || 400;
+
+    // ── 계절 분류 ────────────────────────────────────────
+    const MEAL_SEASONS = {
+      '냉면':['여름'],'콩국수':['여름'],'물냉면':['여름'],'비빔냉면':['여름'],
+      '막국수':['여름'],'삼계탕':['여름'],'아귀찜':['겨울','봄'],
+      '떡국':['겨울'],'곰탕':['겨울'],'설렁탕':['겨울'],'갈비탕':['겨울'],
+      '꼬리곰탕':['겨울'],'우족탕':['겨울'],'찜닭':['겨울'],
+      '버섯들깨탕':['가을','겨울'],'전복죽':['봄','가을'],
+      '미역국':['봄'],'꽃게탕':['봄','가을'],'대게찜':['겨울','봄'],
+      '팥죽':['겨울'],'호박죽':['가을'],'녹두죽':['여름','가을'],
+      '삼겹살구이':['봄'],'보쌈':['겨울'],'족발':['여름'],
+    };
+    const CURRENT_SEASON = (() => {
+      const m = new Date().getMonth() + 1;
+      if (m >= 3 && m <= 5) return '봄';
+      if (m >= 6 && m <= 8) return '여름';
+      if (m >= 9 && m <= 11) return '가을';
+      return '겨울';
+    })();
+
     const ALLERGEN_INFO = {
       egg:       { label:'달걀',      emoji:'🥚' },
       dairy:     { label:'유제품',    emoji:'🥛' },
@@ -543,18 +626,19 @@
       return a;
     };
 
-    const ratedShuffle = (arr, ratings = {}) =>
+    const ratedShuffle = (arr, ratings = {}, seasonBoost = false) =>
       arr
         .map(m => {
           const r = ratings[m.name] || { likes:0, dislikes:0 };
           const score = r.likes - r.dislikes;
-          const weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          let weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          if (seasonBoost && MEAL_SEASONS[m.name]?.includes(CURRENT_SEASON)) weight *= 1.8;
           return { m, priority: Math.random() * weight };
         })
         .sort((a, b) => b.priority - a.priority)
         .map(x => x.m);
 
-    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}, allergens = []) {
+    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}, allergens = [], seasonBoost = false) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
@@ -573,14 +657,14 @@
             }
 
             const freshAdult = adultPool.filter(m => !usedAdult.has(m.name));
-            const chosenAdult = ratedShuffle(freshAdult.length ? freshAdult : adultPool, ratings)[0]
+            const chosenAdult = ratedShuffle(freshAdult.length ? freshAdult : adultPool, ratings, seasonBoost)[0]
               || { name:'직접 입력', cuisine:'custom' };
 
             const childExcludes = new Set([...usedChild, chosenAdult.name]);
             const freshChildDiff = childPool.filter(m => !childExcludes.has(m.name));
             const freshChild     = childPool.filter(m => !usedChild.has(m.name));
             const chosenChild = ratedShuffle(
-              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings
+              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings, seasonBoost
             )[0] || { name:'직접 입력', cuisine:'custom' };
 
             plan[d][mt] = {
@@ -595,7 +679,7 @@
               if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
             }
             const fresh = pool.filter(m => !used.has(m.name));
-            const chosen = ratedShuffle(fresh.length ? fresh : pool, ratings)[0];
+            const chosen = ratedShuffle(fresh.length ? fresh : pool, ratings, seasonBoost)[0];
             plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
           }
         }
@@ -603,10 +687,10 @@
       return plan;
     }
 
-    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false, customMeals = [], ratings = {}, allergens = []) {
+    function pickOneMeal(mealType, cuisines, minAge, excludeName, noSpicy = false, customMeals = [], ratings = {}, allergens = [], seasonBoost = false) {
       const pool = getPool(mealType, cuisines, minAge, noSpicy, customMeals, ratings, allergens).filter(m => m.name !== excludeName);
       if (!pool.length) return null;
-      return ratedShuffle(pool, ratings)[0];
+      return ratedShuffle(pool, ratings, seasonBoost)[0];
     }
 
     function formatTime(ts) {
@@ -738,6 +822,7 @@
               </div>
               <div className="flex items-center gap-1 mt-1 flex-wrap">
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
+                <span className="text-[10px] text-gray-400">{getCalories(meal.name)}kcal</span>
                 {score >= 2 && <span className="text-[9px] text-green-600">👍</span>}
               </div>
             </div>
@@ -766,6 +851,7 @@
             </div>
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
+              <span className="text-[10px] text-gray-400">{getCalories(meal.name)}kcal</span>
               {meal.note && <span title={meal.note} className="text-[10px] text-gray-400 cursor-help">📝</span>}
               {score >= 2 && <span className="text-[10px] text-green-600 font-medium">👍 자주 먹어요</span>}
             </div>
@@ -1583,13 +1669,17 @@
     };
 
     function StatsPanel({ mealPlan, period, hasChildren }) {
-      const { cuisineCounts, nutritionCounts } = useMemo(() => {
+      const { cuisineCounts, nutritionCounts, totalKcal, mealCount } = useMemo(() => {
         const c = { korean:0, western:0, chinese:0, japanese:0, custom:0 };
         const n = { protein:0, veggie:0, carb:0, balanced:0, unknown:0 };
+        let totalKcal = 0, mealCount = 0;
         const addMeal = (name, cuisine) => {
-          if (name && c[cuisine] !== undefined) c[cuisine]++;
+          if (!name) return;
+          if (c[cuisine] !== undefined) c[cuisine]++;
           const tag = MEAL_NUTRITION[name];
           if (tag) n[tag]++; else n.unknown++;
+          totalKcal += getCalories(name);
+          mealCount++;
         };
         for (let d = 0; d < period; d++) {
           for (const mt of ['breakfast','lunch','dinner']) {
@@ -1603,14 +1693,33 @@
             }
           }
         }
-        return { cuisineCounts: c, nutritionCounts: n };
+        return { cuisineCounts: c, nutritionCounts: n, totalKcal, mealCount };
       }, [mealPlan, period, hasChildren]);
 
       const cTotal = Object.values(cuisineCounts).reduce((a,b) => a+b, 0) || 1;
       const nTotal = (Object.values(nutritionCounts).reduce((a,b) => a+b, 0) - nutritionCounts.unknown) || 1;
+      const avgDailyKcal = mealCount > 0 ? Math.round(totalKcal / period) : 0;
+      const kcalPct = Math.min(Math.round(avgDailyKcal / 2000 * 100), 150);
 
       return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 no-print space-y-4">
+          {/* 칼로리 요약 */}
+          {avgDailyKcal > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3">🔥 칼로리</h3>
+              <div className="flex items-end gap-3 mb-2">
+                <span className="text-2xl font-black text-orange-500">{avgDailyKcal.toLocaleString()}</span>
+                <span className="text-xs text-gray-400 mb-1">kcal / 일 평균</span>
+                <span className="ml-auto text-xs text-gray-400 mb-1">권장 2,000kcal 대비 <span className={`font-bold ${kcalPct > 120 ? 'text-red-500' : kcalPct < 80 ? 'text-blue-500' : 'text-green-600'}`}>{kcalPct}%</span></span>
+              </div>
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${kcalPct > 120 ? 'bg-red-400' : kcalPct < 80 ? 'bg-blue-400' : 'bg-orange-400'}`} style={{width:`${Math.min(kcalPct, 100)}%`}} />
+              </div>
+              {kcalPct > 120 && <p className="text-[10px] text-red-500 mt-1.5 bg-red-50 rounded-lg px-2 py-1">💡 칼로리가 높아요. 저칼로리 메뉴를 일부 추가해보세요.</p>}
+              {kcalPct < 80 && <p className="text-[10px] text-blue-500 mt-1.5 bg-blue-50 rounded-lg px-2 py-1">💡 칼로리가 부족할 수 있어요. 단백질 메뉴를 추가해보세요.</p>}
+            </div>
+          )}
+
           {/* 요리 분포 */}
           <div>
             <h3 className="text-sm font-bold text-gray-700 mb-3">📊 요리 분포</h3>
@@ -1871,7 +1980,7 @@
       );
     }
 
-    function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, setAllergens }) {
+    function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, setAllergens, seasonBoost, setSeasonBoost }) {
       const toggle = (c) => setCuisines(prev =>
         prev.includes(c) ? (prev.length>1 ? prev.filter(x=>x!==c) : prev) : [...prev, c]
       );
@@ -1918,6 +2027,22 @@
             </div>
             <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${noSpicy ? 'bg-rose-500' : 'bg-gray-200'}`}>
               <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${noSpicy ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+            </div>
+          </button>
+
+          {/* 계절 메뉴 우선 추천 */}
+          <button
+            onClick={() => setSeasonBoost(v => !v)}
+            className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${seasonBoost ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{{ '봄':'🌸', '여름':'🌻', '가을':'🍂', '겨울':'❄️' }[CURRENT_SEASON]}</span>
+              <div className="text-left">
+                <div className={`font-bold text-sm ${seasonBoost ? 'text-green-700' : 'text-gray-700'}`}>{CURRENT_SEASON} 제철 메뉴 우선 추천</div>
+                <div className="text-xs text-gray-400 mt-0.5">현재 계절에 어울리는 메뉴를 더 자주 추천합니다</div>
+              </div>
+            </div>
+            <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${seasonBoost ? 'bg-green-500' : 'bg-gray-200'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${seasonBoost ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
             </div>
           </button>
 
@@ -2001,7 +2126,10 @@
               <>
                 <div onClick={onEditUnified} className="px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50">
                   <div className="flex-1 min-w-0">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium ${info.badge} mr-2`}>{info.label}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${info.badge}`}>{info.label}</span>
+                      <span className="text-[11px] text-gray-400">{getCalories(meal.name)}kcal</span>
+                    </div>
                     <span className={`font-semibold text-gray-800 text-sm${score >= 2 ? ' text-green-700' : ''}`}>{meal.name}</span>
                   </div>
                   <span className="text-xl flex-shrink-0">{info.emoji}</span>
@@ -2111,7 +2239,8 @@
       const [custom, setCustom]     = useState('');
       const [cuisines, setCuisines]   = useState(['korean']);
       const [noSpicy, setNoSpicy]     = useState(false);
-      const [allergens, setAllergens] = useState([]);
+      const [allergens, setAllergens]   = useState([]);
+      const [seasonBoost, setSeasonBoost] = useState(false);
       const [restoreData, setRestoreData] = useState(restore || null);
 
       const finalPeriod = custom !== '' ? (parseInt(custom)||7) : period;
@@ -2156,7 +2285,7 @@
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
             {step === 1 && <StepFamily members={members} setMembers={setMembers} />}
             {step === 2 && <StepPeriod period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />}
-            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} allergens={allergens} setAllergens={setAllergens} />}
+            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} allergens={allergens} setAllergens={setAllergens} seasonBoost={seasonBoost} setSeasonBoost={setSeasonBoost} />}
 
             <div className="flex justify-between mt-8">
               <button onClick={() => setStep(s => s-1)} disabled={step===1}
@@ -2169,7 +2298,7 @@
                   다음 →
                 </button>
               ) : (
-                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens })}
+                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens, seasonBoost })}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:from-orange-600 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
                   식단 생성 🎉
                 </button>
@@ -2218,6 +2347,22 @@
           return { ...prev, [day]: dayPlan };
         });
         setEdit(null);
+      };
+
+      const copyWeekToNext = () => {
+        if (totalWeeks < 2) return;
+        const srcStart = week * 7;
+        const dstStart = (week + 1) * 7;
+        if (dstStart >= config.period) return;
+        setMealPlan(prev => {
+          const next = { ...prev };
+          for (let i = 0; i < 7; i++) {
+            if (dstStart + i < config.period) {
+              next[dstStart + i] = JSON.parse(JSON.stringify(prev[srcStart + i] || {}));
+            }
+          }
+          return next;
+        });
       };
 
       const regenOne = (day, mt, mode) => {
@@ -2269,6 +2414,18 @@
           e.target.value = '';
         };
         reader.readAsText(file);
+      };
+
+      const shareApp = () => {
+        const url  = 'https://peterpark3832.github.io/Family-meal-planner/';
+        const text = `${config.period}일 가족 식단표를 자동으로 만들었어요! 무료로 써보세요 🍽️`;
+        if (navigator.share) {
+          navigator.share({ title: '우리 가족 식단 플래너', text, url }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(url).then(() => {
+            setCopied(true); setTimeout(() => setCopied(false), 2000);
+          });
+        }
       };
 
       const exportText = () => {
@@ -2360,6 +2517,8 @@
                 className="hidden sm:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
                 🖨️<span className="hidden sm:inline ml-1">인쇄</span>
               </button>
+              <button onClick={shareApp} title="공유하기"
+                className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center justify-center touch-target">🔗</button>
               <button onClick={onHelp} title="사용 가이드"
                 className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all flex items-center justify-center touch-target">?</button>
             </div>
@@ -2384,13 +2543,19 @@
             <>
               {/* 주차 탭 (데스크탑) */}
               {totalWeeks > 1 && (
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-print">
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-print">
                   {Array.from({length:totalWeeks}, (_,i) => (
                     <button key={i} onClick={() => setWeek(i)}
                       className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${week===i ? 'bg-orange-500 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'}`}>
                       {i+1}주차
                     </button>
                   ))}
+                  {week < totalWeeks - 1 && (
+                    <button onClick={copyWeekToNext} title="이번 주 식단을 다음 주로 복사"
+                      className="ml-auto flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-500 hover:bg-orange-50 hover:border-orange-300 transition-all">
+                      📋 다음 주로 복사
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -2597,7 +2762,7 @@
         } else {
           const minAge    = getMinAge(cfgOrConfig.members);
           const children  = hasKids(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals, ratings, cfgOrConfig.allergens || []));
+          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals, ratings, cfgOrConfig.allergens || [], cfgOrConfig.seasonBoost || false));
         }
         setScreen('plan');
       }, [customMeals, ratings]);
@@ -2606,7 +2771,7 @@
         if (!config) return;
         const minAge   = getMinAge(config.members);
         const children = hasKids(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals, ratings, config.allergens || []));
+        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals, ratings, config.allergens || [], config.seasonBoost || false));
       }, [config, customMeals, ratings]);
 
       const saveTemplate = useCallback((name, cfg, plan) => {
