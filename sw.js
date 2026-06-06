@@ -1,5 +1,5 @@
 // 우리 가족 식단 플래너 – Service Worker
-const CACHE = 'fmp-v1';
+const CACHE = 'fmp-v3';
 const SHELL = ['./index.html', './manifest.json', './icon.svg'];
 
 // 설치: 앱 셸 캐싱
