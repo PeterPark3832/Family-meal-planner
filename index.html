@@ -61,9 +61,9 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon.svg" />
   <meta name="theme-color" content="#f97316" />
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
@@ -420,6 +420,46 @@
     const CAT_ORDER = ['육류/달걀','해산물','채소/과일','두부/유제품','곡류/면/빵','가공/소스','기타'];
     const CAT_EMOJI = { '육류/달걀':'🥩','해산물':'🐟','채소/과일':'🥦','두부/유제품':'🧀','곡류/면/빵':'🌾','가공/소스':'🫙','기타':'📦' };
 
+    const INGREDIENT_QUANTITY = {
+      '계란':        { unit:'개',   perAdult:2,   perChild:1   },
+      '달걀':        { unit:'개',   perAdult:2,   perChild:1   },
+      '쌀':          { unit:'g',    perAdult:90,  perChild:60  },
+      '소고기':      { unit:'g',    perAdult:150, perChild:100 },
+      '돼지고기':    { unit:'g',    perAdult:150, perChild:100 },
+      '닭고기':      { unit:'g',    perAdult:150, perChild:100 },
+      '닭가슴살':    { unit:'g',    perAdult:150, perChild:100 },
+      '삼겹살':      { unit:'g',    perAdult:200, perChild:120 },
+      '갈비':        { unit:'g',    perAdult:200, perChild:130 },
+      '다진고기':    { unit:'g',    perAdult:100, perChild:70  },
+      '다진돼지고기':{ unit:'g',    perAdult:100, perChild:70  },
+      '오징어':      { unit:'마리', perAdult:0.5, perChild:0.3 },
+      '새우':        { unit:'g',    perAdult:100, perChild:70  },
+      '연어':        { unit:'g',    perAdult:120, perChild:80  },
+      '참치캔':      { unit:'캔',   perAdult:0.5, perChild:0.3 },
+      '고등어':      { unit:'토막', perAdult:1,   perChild:0.7 },
+      '삼치':        { unit:'토막', perAdult:1,   perChild:0.7 },
+      '황태':        { unit:'g',    perAdult:50,  perChild:30  },
+      '두부':        { unit:'모',   perAdult:0.5, perChild:0.3 },
+      '순두부':      { unit:'봉',   perAdult:1,   perChild:0.7 },
+      '대파':        { unit:'대',   perAdult:0.3, perChild:0.2 },
+      '양파':        { unit:'개',   perAdult:0.5, perChild:0.3 },
+      '당근':        { unit:'개',   perAdult:0.3, perChild:0.2 },
+      '감자':        { unit:'개',   perAdult:0.5, perChild:0.3 },
+      '애호박':      { unit:'개',   perAdult:0.5, perChild:0.3 },
+      '배추':        { unit:'통',   perAdult:0.2, perChild:0.1 },
+      '버섯':        { unit:'g',    perAdult:80,  perChild:50  },
+      '시금치':      { unit:'g',    perAdult:80,  perChild:50  },
+      '파스타':      { unit:'g',    perAdult:100, perChild:70  },
+      '우동면':      { unit:'인분', perAdult:1,   perChild:0.7 },
+      '중화면':      { unit:'인분', perAdult:1,   perChild:0.7 },
+      '떡국떡':      { unit:'g',    perAdult:150, perChild:100 },
+      '만두':        { unit:'개',   perAdult:8,   perChild:5   },
+      '치즈':        { unit:'장',   perAdult:2,   perChild:1   },
+      '베이컨':      { unit:'g',    perAdult:50,  perChild:30  },
+      '햄':          { unit:'g',    perAdult:80,  perChild:50  },
+      '우유':        { unit:'ml',   perAdult:200, perChild:200 },
+    };
+
     const TEMPLATE_KEY = 'fmp_templates';
 
     // ── 칼로리 룩업 (1인분 기준 kcal) ──────────────────
@@ -587,6 +627,48 @@
       '육개장':'balanced','갈비탕':'balanced','소고기뭇국':'balanced',
     };
 
+    // ── 조리 시간 분류 (빠름: ~20분 / 보통: 20-40분 / 느림: 40분+) ────────────
+    const MEAL_PREP_TIME = {
+      // 빠른 조리 (quick)
+      '계란프라이+밥':'quick','시리얼+우유':'quick','요거트+그래놀라':'quick',
+      '흰죽':'quick','참치마요덮밥':'quick','볶음밥':'quick','오므라이스':'quick',
+      '타마고동':'quick','규동':'quick','냉면':'quick','물냉면':'quick',
+      '소바':'quick','냉우동':'quick','붓카케우동':'quick',
+      '샌드위치':'quick','베이글+크림치즈':'quick','클럽샌드위치':'quick',
+      '짜장면':'quick','짬뽕':'quick','중화볶음밥':'quick','짬뽕밥':'quick',
+      '라멘':'quick','우동':'quick','야끼소바':'quick','미소라멘':'quick',
+      '오일파스타':'quick','봉골레파스타':'quick',
+      // 보통 조리 (medium)
+      '야채죽':'medium','호박죽':'medium','김치볶음밥':'medium',
+      '된장찌개':'medium','미역국+밥':'medium','된장국+밥':'medium','순두부찌개':'medium',
+      '계란찜':'medium','두부조림':'medium','감자조림':'medium',
+      '고등어조림':'medium','삼치구이':'medium','오징어볶음':'medium',
+      '비빔밥':'medium','잡채':'medium','불고기':'medium','제육볶음':'medium',
+      '닭가슴살 샐러드':'medium','콩나물국밥':'medium','만두국':'medium',
+      '크림파스타':'medium','토마토파스타':'medium','까르보나라':'medium',
+      '미트볼 스파게티':'medium','오믈렛':'medium','팬케이크':'medium',
+      '프렌치토스트':'medium','에그베네딕트':'medium','카레라이스':'medium',
+      '함박스테이크':'medium','오야코동':'medium','카츠동':'medium',
+      '마파두부':'medium','유린기':'medium','새우볶음밥':'medium',
+      '타코':'medium','부리또':'medium','퀘사디야':'medium',
+      '떡볶이':'medium','김치찌개':'medium','참치김치찌개':'medium',
+      '소불고기덮밥':'medium','돼지불백':'medium','뇨키':'medium',
+      '낙지볶음':'medium','쭈꾸미볶음':'medium','두루치기':'medium',
+      '닭갈비':'medium','돈카츠':'medium','텐동':'medium',
+      // 긴 조리 (long)
+      '갈비찜':'long','닭볶음탕':'long','삼겹살구이':'long',
+      '황태해장국':'long','순대국밥':'long','갈비탕':'long',
+      '육개장':'long','감자탕':'long','설렁탕':'long','닭곰탕':'long',
+      '보쌈':'long','차돌박이구이':'long','해물찜':'long','아귀찜':'long',
+      '전복죽':'long','라자냐':'long','그라탕':'long','리조또':'long',
+      '비프 스튜':'long','포크찹':'long','치킨 스테이크':'long',
+      '탕수육':'long','깐풍기':'long','팔보채':'long','동파육':'long',
+      '마라탕':'long','마라샹궈':'long','훠궈 (전골)':'long',
+      '샤브샤브':'long','스키야키':'long','나베 (전골)':'long',
+      '삼계탕':'long','쌈밥':'long','수제비':'long','칼국수':'long',
+    };
+    const getPrep = (name) => MEAL_PREP_TIME[name] || 'medium';
+
     const MEAL_TYPES = [
       { id:'breakfast', label:'아침', emoji:'🌅' },
       { id:'lunch',     label:'점심', emoji:'☀️' },
@@ -594,6 +676,13 @@
     ];
 
     const WEEK_DAYS = ['월','화','수','목','금','토','일'];
+
+    // ── GA4 사용자 행동 이벤트 트래킹 헬퍼 ─────────────
+    const trackEvent = (name, params = {}) => {
+      try {
+        if (typeof gtag === 'function') gtag('event', name, params);
+      } catch(e) {}
+    };
 
     // ═══════════════════════════════════════════════════
     //  헬퍼 함수
@@ -638,11 +727,59 @@
         .sort((a, b) => b.priority - a.priority)
         .map(x => x.m);
 
-    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}, allergens = [], seasonBoost = false) {
+    // 하루 영양 다양성 + 요리 연속성 방지 + 주중 빠른 조리 우선 — 통합 가중 셔플
+    const ratedShuffleBalanced = (arr, ratings = {}, seasonBoost = false, dayNutrition = [], recentCuisines = [], quickMode = false) =>
+      arr
+        .map(m => {
+          const r = ratings[m.name] || { likes:0, dislikes:0 };
+          const score = r.likes - r.dislikes;
+          let weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          if (seasonBoost && MEAL_SEASONS[m.name]?.includes(CURRENT_SEASON)) weight *= 1.8;
+          // 하루 내 영양 다양성: 아직 없는 영양 유형에 보너스
+          const nutType = MEAL_NUTRITION[m.name];
+          if (nutType && dayNutrition.length > 0 && !dayNutrition.includes(nutType)) weight *= 1.6;
+          // 연속 같은 요리 방지: 최근 3일 내 2회 이상이면 패널티
+          const streakCount = recentCuisines.filter(c => c === m.cuisine).length;
+          if (streakCount >= 3) weight *= 0.25;
+          else if (streakCount >= 2) weight *= 0.55;
+          // 주중 빠른 조리 우선 모드: 빠른 메뉴 1.8×
+          if (quickMode) {
+            const prep = getPrep(m.name);
+            if (prep === 'quick') weight *= 1.8;
+            else if (prep === 'long') weight *= 0.5;
+          }
+          return { m, priority: Math.random() * weight };
+        })
+        .sort((a, b) => b.priority - a.priority)
+        .map(x => x.m);
+
+    // 최근 N일 특정 식사 유형의 요리 계열(cuisine) 이력 반환
+    const getRecentCuisines = (plan, d, mt, lookback, isChildren, role) => {
+      const cuis = [];
+      for (let i = Math.max(0, d - 3); i < d; i++) {
+        if (i < lookback) continue;
+        const slot = plan[i]?.[mt];
+        if (!slot) continue;
+        const c = isChildren ? (role === 'adult' ? slot.adult?.cuisine : slot.child?.cuisine) : slot.cuisine;
+        if (c && c !== 'custom') cuis.push(c);
+      }
+      return cuis;
+    };
+
+    function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}, allergens = [], seasonBoost = false, preferQuick = false) {
       const plan = {};
+      // 플랜 길이에 비례한 동적 lookback 윈도우
+      // 7일→7, 14일→11, 21일→13, 30일→14 — 장기 플랜일수록 더 넓게 제한
+      const lookbackWindow = period <= 7 ? 7 : period <= 14 ? 11 : period <= 21 ? 13 : 14;
+
       for (let d = 0; d < period; d++) {
         plan[d] = {};
-        const lookback = Math.max(0, d - 10);
+        const lookback = Math.max(0, d - lookbackWindow);
+        const dayNutritionAdult = [];
+        const dayNutritionChild = [];
+        // 주중(월~금)이면 빠른 조리 모드 적용
+        const isWeekday = (d % 7) < 5;
+        const quickMode = preferQuick && isWeekday;
 
         for (const mt of ['breakfast','lunch','dinner']) {
           if (childrenPresent) {
@@ -656,16 +793,20 @@
               if (plan[wd]?.[mt]?.child?.name) usedChild.add(plan[wd][mt].child.name);
             }
 
+            const recentCuisA = getRecentCuisines(plan, d, mt, 0, true, 'adult');
             const freshAdult = adultPool.filter(m => !usedAdult.has(m.name));
-            const chosenAdult = ratedShuffle(freshAdult.length ? freshAdult : adultPool, ratings, seasonBoost)[0]
+            const chosenAdult = ratedShuffleBalanced(freshAdult.length ? freshAdult : adultPool, ratings, seasonBoost, dayNutritionAdult, recentCuisA, quickMode)[0]
               || { name:'직접 입력', cuisine:'custom' };
+            if (MEAL_NUTRITION[chosenAdult.name]) dayNutritionAdult.push(MEAL_NUTRITION[chosenAdult.name]);
 
+            const recentCuisC = getRecentCuisines(plan, d, mt, 0, true, 'child');
             const childExcludes = new Set([...usedChild, chosenAdult.name]);
             const freshChildDiff = childPool.filter(m => !childExcludes.has(m.name));
             const freshChild     = childPool.filter(m => !usedChild.has(m.name));
-            const chosenChild = ratedShuffle(
-              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings, seasonBoost
+            const chosenChild = ratedShuffleBalanced(
+              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings, seasonBoost, dayNutritionChild, recentCuisC, quickMode
             )[0] || { name:'직접 입력', cuisine:'custom' };
+            if (MEAL_NUTRITION[chosenChild.name]) dayNutritionChild.push(MEAL_NUTRITION[chosenChild.name]);
 
             plan[d][mt] = {
               adult: { name: chosenAdult.name, cuisine: chosenAdult.cuisine },
@@ -678,9 +819,11 @@
             for (let wd = lookback; wd < d; wd++) {
               if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
             }
+            const recentCuis = getRecentCuisines(plan, d, mt, 0, false, null);
             const fresh = pool.filter(m => !used.has(m.name));
-            const chosen = ratedShuffle(fresh.length ? fresh : pool, ratings, seasonBoost)[0];
+            const chosen = ratedShuffleBalanced(fresh.length ? fresh : pool, ratings, seasonBoost, dayNutritionAdult, recentCuis, quickMode)[0];
             plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
+            if (MEAL_NUTRITION[chosen.name]) dayNutritionAdult.push(MEAL_NUTRITION[chosen.name]);
           }
         }
       }
@@ -693,10 +836,51 @@
       return ratedShuffle(pool, ratings, seasonBoost)[0];
     }
 
+    // 하루 영양 구성 분석 (protein/veggie/carb/balanced)
+    const getDayNutrition = (dayPlan, hasChildren) => {
+      const types = { protein:0, veggie:0, carb:0, balanced:0 };
+      for (const mt of ['breakfast','lunch','dinner']) {
+        const slot = dayPlan?.[mt];
+        if (!slot) continue;
+        const name = hasChildren ? slot.adult?.name : slot.name;
+        const t = MEAL_NUTRITION[name];
+        if (t && types[t] !== undefined) types[t]++;
+      }
+      return types;
+    };
+
+    // 가족 구성원별 1일 권장 칼로리 추정 (나이·성별 기반 간이 계산)
+    const getRecommendedKcal = (member) => {
+      const age = parseInt(member.age) || 30;
+      if (member.type === 'child') {
+        if (age <= 2)  return 900;
+        if (age <= 5)  return 1200;
+        if (age <= 8)  return 1400;
+        if (age <= 11) return 1600;
+        if (age <= 14) return member.gender === 'male' ? 2000 : 1700;
+        return member.gender === 'male' ? 2200 : 1800;
+      }
+      // 성인
+      if (age < 30) return member.gender === 'male' ? 2300 : 1900;
+      if (age < 50) return member.gender === 'male' ? 2000 : 1700;
+      if (age < 65) return member.gender === 'male' ? 1900 : 1600;
+      return member.gender === 'male' ? 1700 : 1500;
+    };
+
     function formatTime(ts) {
       if (!ts) return '';
       const d = new Date(ts);
       return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w,y, x+w,y+h, r);
+      ctx.arcTo(x+w,y+h, x,y+h, r);
+      ctx.arcTo(x,y+h, x,y, r);
+      ctx.arcTo(x,y, x+w,y, r);
+      ctx.closePath();
     }
 
     // ═══════════════════════════════════════════════════
@@ -852,6 +1036,8 @@
             <div className="flex items-center gap-1 mt-1.5 flex-wrap">
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${info.badge}`}>{info.label}</span>
               <span className="text-[10px] text-gray-400">{getCalories(meal.name)}kcal</span>
+              {getPrep(meal.name) === 'quick' && <span className="text-[10px] text-sky-500 font-semibold" title="빠른 조리 (20분 이내)">⚡</span>}
+              {getPrep(meal.name) === 'long'  && <span className="text-[10px] text-amber-400" title="긴 조리 (40분 이상)">🕐</span>}
               {meal.note && <span title={meal.note} className="text-[10px] text-gray-400 cursor-help">📝</span>}
               {score >= 2 && <span className="text-[10px] text-green-600 font-medium">👍 자주 먹어요</span>}
             </div>
@@ -1414,12 +1600,12 @@
     // ═══════════════════════════════════════════════════
     //  컴포넌트: 장보기 목록 모달
     // ═══════════════════════════════════════════════════
-    function ShoppingListModal({ mealPlan, period, hasChildren, onClose }) {
+    function ShoppingListModal({ mealPlan, period, hasChildren, members = [], onClose }) {
       const [checked, setChecked]   = useState(new Set());
       const [copied, setCopied]     = useState(false);
       const [view, setView]         = useState('category'); // 'category' | 'meal'
 
-      const { grouped, totalCount, mealList, ingToMeals } = useMemo(() => {
+      const { grouped, totalCount, mealList, ingToMeals, mealCounts } = useMemo(() => {
         // 1) 식단에 등장하는 메뉴 수집 (중복 제거)
         const mealNames = new Set();
         for (let d = 0; d < period; d++) {
@@ -1431,6 +1617,21 @@
               if (slot.child?.name) mealNames.add(slot.child.name);
             } else {
               if (slot.name) mealNames.add(slot.name);
+            }
+          }
+        }
+
+        // 장보기 수량 추정: 메뉴별 등장 횟수
+        const mealCounts = {};
+        for (let d = 0; d < period; d++) {
+          for (const mt of ['breakfast','lunch','dinner']) {
+            const slot = mealPlan[d]?.[mt];
+            if (!slot) continue;
+            if (hasChildren) {
+              if (slot.adult?.name) mealCounts[slot.adult.name] = (mealCounts[slot.adult.name]||0)+1;
+              if (slot.child?.name) mealCounts[slot.child.name] = (mealCounts[slot.child.name]||0)+1;
+            } else {
+              if (slot.name) mealCounts[slot.name] = (mealCounts[slot.name]||0)+1;
             }
           }
         }
@@ -1463,8 +1664,21 @@
             ingredients: MEAL_INGREDIENTS[name] || [],
           }));
 
-        return { grouped: groups, totalCount: ingredients.size, mealList, ingToMeals };
+        return { grouped: groups, totalCount: ingredients.size, mealList, ingToMeals, mealCounts };
       }, [mealPlan, period, hasChildren]);
+
+      const adultCount = members.filter(m => m.type === 'adult').length || 1;
+      const kidCount   = members.filter(m => m.type === 'child').length;
+      const getIngQty  = (ing) => {
+        const q = INGREDIENT_QUANTITY[ing];
+        if (!q) return null;
+        const meals = ingToMeals[ing] || [];
+        const occ = meals.reduce((s, mn) => s + (mealCounts[mn]||0), 0);
+        if (!occ) return null;
+        const raw = occ * (adultCount * q.perAdult + kidCount * q.perChild);
+        const rounded = raw < 1 ? Math.ceil(raw * 10) / 10 : Math.ceil(raw);
+        return `약 ${rounded}${q.unit}`;
+      };
 
       const toggle = (item) => setChecked(prev => {
         const next = new Set(prev);
@@ -1563,6 +1777,9 @@
                               </span>
                               <div className="flex-1 min-w-0">
                                 <span className={`text-sm font-medium ${checked.has(item) ? 'line-through text-gray-300' : 'text-gray-700'}`}>{item}</span>
+                              {!checked.has(item) && getIngQty(item) && (
+                                <span className="text-[10px] text-blue-500 font-medium mt-0.5 block">{getIngQty(item)}</span>
+                              )}
                                 {!checked.has(item) && ingToMeals[item] && (
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {ingToMeals[item].slice(0, 4).map(meal => {
@@ -1668,7 +1885,7 @@
       balanced: { label:'균형',     emoji:'⚖️', bar:'bg-blue-400'   },
     };
 
-    function StatsPanel({ mealPlan, period, hasChildren }) {
+    function StatsPanel({ mealPlan, period, hasChildren, members = [] }) {
       const { cuisineCounts, nutritionCounts, totalKcal, mealCount } = useMemo(() => {
         const c = { korean:0, western:0, chinese:0, japanese:0, custom:0 };
         const n = { protein:0, veggie:0, carb:0, balanced:0, unknown:0 };
@@ -1699,7 +1916,12 @@
       const cTotal = Object.values(cuisineCounts).reduce((a,b) => a+b, 0) || 1;
       const nTotal = (Object.values(nutritionCounts).reduce((a,b) => a+b, 0) - nutritionCounts.unknown) || 1;
       const avgDailyKcal = mealCount > 0 ? Math.round(totalKcal / period) : 0;
-      const kcalPct = Math.min(Math.round(avgDailyKcal / 2000 * 100), 150);
+
+      // 가족 전체 권장 칼로리 합산 (1인 기준이면 개인 목표, 여러 명이면 합산)
+      const targetKcal = members.length > 0
+        ? members.reduce((sum, m) => sum + getRecommendedKcal(m), 0)
+        : 2000;
+      const kcalPct = avgDailyKcal > 0 ? Math.min(Math.round(avgDailyKcal / targetKcal * 100), 150) : 0;
 
       return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 no-print space-y-4">
@@ -1710,11 +1932,30 @@
               <div className="flex items-end gap-3 mb-2">
                 <span className="text-2xl font-black text-orange-500">{avgDailyKcal.toLocaleString()}</span>
                 <span className="text-xs text-gray-400 mb-1">kcal / 일 평균</span>
-                <span className="ml-auto text-xs text-gray-400 mb-1">권장 2,000kcal 대비 <span className={`font-bold ${kcalPct > 120 ? 'text-red-500' : kcalPct < 80 ? 'text-blue-500' : 'text-green-600'}`}>{kcalPct}%</span></span>
+                <span className="ml-auto text-xs text-gray-400 mb-1">가족 권장 {targetKcal.toLocaleString()}kcal 대비 <span className={`font-bold ${kcalPct > 120 ? 'text-red-500' : kcalPct < 80 ? 'text-blue-500' : 'text-green-600'}`}>{kcalPct}%</span></span>
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${kcalPct > 120 ? 'bg-red-400' : kcalPct < 80 ? 'bg-blue-400' : 'bg-orange-400'}`} style={{width:`${Math.min(kcalPct, 100)}%`}} />
               </div>
+              {/* 가족 구성원별 권장량 상세 */}
+              {members.length > 1 && (
+                <div className="mt-3 space-y-1.5">
+                  {members.map((m, i) => {
+                    const rec = getRecommendedKcal(m);
+                    const icon = m.type === 'child' ? '🧒' : m.gender === 'male' ? '👨' : '👩';
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-[11px]">
+                        <span className="flex-shrink-0">{icon}</span>
+                        <span className="text-gray-500 flex-shrink-0">{m.type==='adult'?'성인':'자녀'} {m.age}세</span>
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-orange-300 rounded-full" style={{width:`${Math.min(Math.round(rec/3000*100), 100)}%`}} />
+                        </div>
+                        <span className="text-gray-400 flex-shrink-0 w-16 text-right">{rec.toLocaleString()} kcal</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {kcalPct > 120 && <p className="text-[10px] text-red-500 mt-1.5 bg-red-50 rounded-lg px-2 py-1">💡 칼로리가 높아요. 저칼로리 메뉴를 일부 추가해보세요.</p>}
               {kcalPct < 80 && <p className="text-[10px] text-blue-500 mt-1.5 bg-blue-50 rounded-lg px-2 py-1">💡 칼로리가 부족할 수 있어요. 단백질 메뉴를 추가해보세요.</p>}
             </div>
@@ -1882,6 +2123,92 @@
     }
 
     // ═══════════════════════════════════════════════════
+    //  컴포넌트: 오늘의 식단 요약 카드
+    // ═══════════════════════════════════════════════════
+    function TodayCard({ mealPlan, config, hasChildren, onEdit, onRecipe }) {
+      const todayDow = new Date().getDay();
+      const todayIdx = todayDow === 0 ? 6 : todayDow - 1;
+
+      // 플랜에서 오늘에 해당하는 첫 번째 날 인덱스 탐색
+      let planDayIdx = -1;
+      for (let i = 0; i < config.period; i++) {
+        if (i % 7 === todayIdx) { planDayIdx = i; break; }
+      }
+      if (planDayIdx < 0) return null;
+
+      const todayMeals = mealPlan[planDayIdx];
+      if (!todayMeals) return null;
+
+      // 오늘 총 칼로리 (성인 기준)
+      const todayKcal = MEAL_TYPES.reduce((sum, mt) => {
+        const slot = todayMeals[mt.id];
+        const name = hasChildren ? slot?.adult?.name : slot?.name;
+        return sum + (name ? getCalories(name) : 0);
+      }, 0);
+
+      const dayNut = getDayNutrition(todayMeals, hasChildren);
+      const nutTotal = Object.values(dayNut).reduce((a,b)=>a+b,0) || 1;
+
+      const WEEK_LABELS = ['일','월','화','수','목','금','토'];
+      const dayLabel = WEEK_LABELS[todayDow] + '요일';
+
+      return (
+        <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-rose-500 rounded-2xl p-4 mb-5 shadow-lg text-white no-print fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-[11px] font-semibold opacity-80 tracking-wide">📅 오늘의 식단</div>
+              <div className="text-xl font-black leading-tight">{dayLabel}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] opacity-75">오늘 예상 칼로리</div>
+              <div className="text-2xl font-black">{todayKcal > 0 ? todayKcal.toLocaleString() : '—'}<span className="text-xs ml-1 opacity-80">kcal</span></div>
+            </div>
+          </div>
+
+          {/* 3끼 카드 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {MEAL_TYPES.map(mt => {
+              const slot = todayMeals[mt.id];
+              const name = hasChildren ? slot?.adult?.name : slot?.name;
+              const cuisine = hasChildren ? slot?.adult?.cuisine : slot?.cuisine;
+              const info = CUISINE_INFO[cuisine || 'custom'];
+              return (
+                <div key={mt.id}
+                  onClick={() => onEdit(planDayIdx, mt.id, null)}
+                  className="bg-white/20 backdrop-blur-sm rounded-xl p-2.5 cursor-pointer hover:bg-white/30 active:bg-white/35 transition-all">
+                  <div className="text-[10px] font-semibold opacity-80 mb-1">{mt.emoji} {mt.label}</div>
+                  <div className="text-xs font-bold leading-tight truncate">{name || <span className="opacity-50">미설정</span>}</div>
+                  {name && (
+                    <div className="text-[10px] opacity-70 mt-0.5">{getCalories(name)}kcal · {info.label}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 오늘 영양 분포 미니바 */}
+          {todayKcal > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] opacity-70 flex-shrink-0">영양</span>
+              <div className="flex-1 h-2 rounded-full overflow-hidden flex gap-px bg-white/20">
+                {Object.entries(NUTRITION_INFO).map(([key, info]) => {
+                  const pct = Math.round(dayNut[key] / nutTotal * 100);
+                  if (!pct) return null;
+                  return <div key={key} className={`h-full ${info.bar} opacity-90`} style={{width:`${pct}%`}} title={`${info.label} ${pct}%`} />;
+                })}
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                {Object.entries(NUTRITION_INFO).map(([key, info]) => dayNut[key] > 0 && (
+                  <span key={key} className="text-[9px] opacity-80">{info.emoji}{dayNut[key]}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
     //  설정 스텝 컴포넌트들
     // ═══════════════════════════════════════════════════
     function StepFamily({ members, setMembers }) {
@@ -1980,7 +2307,7 @@
       );
     }
 
-    function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, setAllergens, seasonBoost, setSeasonBoost }) {
+    function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, setAllergens, seasonBoost, setSeasonBoost, preferQuick, setPreferQuick }) {
       const toggle = (c) => setCuisines(prev =>
         prev.includes(c) ? (prev.length>1 ? prev.filter(x=>x!==c) : prev) : [...prev, c]
       );
@@ -2043,6 +2370,22 @@
             </div>
             <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${seasonBoost ? 'bg-green-500' : 'bg-gray-200'}`}>
               <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${seasonBoost ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+            </div>
+          </button>
+
+          {/* 주중 빠른 조리 우선 */}
+          <button
+            onClick={() => setPreferQuick(v => !v)}
+            className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${preferQuick ? 'border-sky-400 bg-sky-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">⚡</span>
+              <div className="text-left">
+                <div className={`font-bold text-sm ${preferQuick ? 'text-sky-700' : 'text-gray-700'}`}>주중 빠른 조리 우선</div>
+                <div className="text-xs text-gray-400 mt-0.5">월~금에는 20분 이내 간편 메뉴를 우선 추천합니다</div>
+              </div>
+            </div>
+            <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${preferQuick ? 'bg-sky-500' : 'bg-gray-200'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${preferQuick ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
             </div>
           </button>
 
@@ -2241,6 +2584,7 @@
       const [noSpicy, setNoSpicy]     = useState(false);
       const [allergens, setAllergens]   = useState([]);
       const [seasonBoost, setSeasonBoost] = useState(false);
+      const [preferQuick, setPreferQuick] = useState(false);
       const [restoreData, setRestoreData] = useState(restore || null);
 
       const finalPeriod = custom !== '' ? (parseInt(custom)||7) : period;
@@ -2285,7 +2629,7 @@
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
             {step === 1 && <StepFamily members={members} setMembers={setMembers} />}
             {step === 2 && <StepPeriod period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />}
-            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} allergens={allergens} setAllergens={setAllergens} seasonBoost={seasonBoost} setSeasonBoost={setSeasonBoost} />}
+            {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} allergens={allergens} setAllergens={setAllergens} seasonBoost={seasonBoost} setSeasonBoost={setSeasonBoost} preferQuick={preferQuick} setPreferQuick={setPreferQuick} />}
 
             <div className="flex justify-between mt-8">
               <button onClick={() => setStep(s => s-1)} disabled={step===1}
@@ -2298,7 +2642,7 @@
                   다음 →
                 </button>
               ) : (
-                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens, seasonBoost })}
+                <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens, seasonBoost, preferQuick })}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:from-orange-600 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
                   식단 생성 🎉
                 </button>
@@ -2323,6 +2667,10 @@
       const [recipeMeal, setRecipeMeal]         = useState(null);
       const fileInputRef = React.useRef(null);
       const allergens = config?.allergens || [];
+      const openRecipe = useCallback((name, cuisine) => {
+        setRecipeMeal({ name, cuisine });
+        trackEvent('recipe_searched', { meal: name, cuisine });
+      }, []);
 
       const totalWeeks  = Math.ceil(config.period / 7);
 
@@ -2399,6 +2747,159 @@
         a.download = `식단플래너_${new Date().toISOString().slice(0,10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
+      };
+
+      const exportToCalendar = () => {
+        const mealTimes = { breakfast:[8,0,30], lunch:[12,0,45], dinner:[19,0,45] };
+        const mealLabels = { breakfast:'아침', lunch:'점심', dinner:'저녁' };
+        const today = new Date(); today.setHours(0,0,0,0);
+        const fmtDT = (d) => {
+          const pad = n => String(n).padStart(2,'0');
+          return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+        };
+        const esc = (s) => s.replace(/[,;\\]/g, c => '\\' + c).replace(/\n/g, '\\n');
+        const lines = [
+          'BEGIN:VCALENDAR','VERSION:2.0',
+          'PRODID:-//우리 가족 식단 플래너//KR','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+        ];
+        let uid = Date.now();
+        for (let d = 0; d < config.period; d++) {
+          const date = new Date(today); date.setDate(today.getDate() + d);
+          for (const mt of ['breakfast','lunch','dinner']) {
+            const slot = mealPlan[d]?.[mt];
+            if (!slot) continue;
+            let summary;
+            if (children) {
+              const an = slot.adult?.name, cn = slot.child?.name;
+              if (!an && !cn) continue;
+              summary = `${mealLabels[mt]}: ${an||'-'}${cn?' / '+cn+'(아이)':''}`;
+            } else {
+              if (!slot.name) continue;
+              summary = `${mealLabels[mt]}: ${slot.name}`;
+            }
+            const [h,m,dur] = mealTimes[mt];
+            const start = new Date(date); start.setHours(h,m,0,0);
+            const end = new Date(start); end.setMinutes(start.getMinutes()+dur);
+            lines.push('BEGIN:VEVENT');
+            lines.push(`UID:fmp-${d}-${mt}-${uid++}@family-meal-planner`);
+            lines.push(`DTSTART:${fmtDT(start)}`);
+            lines.push(`DTEND:${fmtDT(end)}`);
+            lines.push(`SUMMARY:${esc(summary)}`);
+            lines.push('END:VEVENT');
+          }
+        }
+        lines.push('END:VCALENDAR');
+        const blob = new Blob([lines.join('\r\n')], { type:'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `식단표_${new Date().toISOString().slice(0,10)}.ics`;
+        a.click(); URL.revokeObjectURL(url);
+        trackEvent('calendar_exported', { period: config.period });
+      };
+
+      const shareImage = () => {
+        const W = 1200, H = 640;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const KO_FONT = '"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif';
+
+        // Background
+        const bg = ctx.createLinearGradient(0,0,W,H);
+        bg.addColorStop(0,'#fff7ed'); bg.addColorStop(1,'#fce7f3');
+        ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+        // Header bar
+        const hg = ctx.createLinearGradient(0,0,W,0);
+        hg.addColorStop(0,'#f97316'); hg.addColorStop(1,'#ec4899');
+        ctx.fillStyle = hg; ctx.fillRect(0,0,W,72);
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold 28px ${KO_FONT}`; ctx.textBaseline='middle';
+        ctx.fillText('🍽️ 우리 가족 식단표', 24, 28);
+        ctx.font = `16px ${KO_FONT}`;
+        const weekLabel = totalWeeks > 1 ? ` · ${week+1}주차` : '';
+        ctx.fillText(`${config.period}일 플랜 · ${config.members.length}인 가족${weekLabel}`, 24, 54);
+
+        const daysN = Math.min(7, config.period - weekStart);
+        const LEFT = 60, TOP = 82, BOT = 620;
+        const colW = (W - LEFT - 8) / daysN;
+        const rowH = (BOT - TOP - 32) / 3;
+        const DAYS_KO = ['월','화','수','목','금','토','일'];
+        const MT_LABEL = { breakfast:'🌅 아침', lunch:'☀️ 점심', dinner:'🌙 저녁' };
+
+        // Row labels
+        ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+        MEAL_TYPES.forEach((mt, ri) => {
+          const y = TOP + 32 + ri * rowH + rowH / 2;
+          ctx.font = `bold 13px ${KO_FONT}`; ctx.fillStyle = '#6b7280';
+          ctx.fillText(MT_LABEL[mt.id], LEFT/2, y);
+        });
+
+        // Day headers
+        for (let i = 0; i < daysN; i++) {
+          const di = weekStart + i, dow = di % 7;
+          const x = LEFT + i * colW + colW / 2;
+          ctx.fillStyle = dow===6?'#ef4444':dow===5?'#3b82f6':'#374151';
+          ctx.font = `bold 16px ${KO_FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(DAYS_KO[dow], x, TOP + 16);
+        }
+
+        // Cells
+        MEAL_TYPES.forEach((mt, ri) => {
+          for (let i = 0; i < daysN; i++) {
+            const di = weekStart + i;
+            const slot = mealPlan[di]?.[mt.id];
+            const name = children ? slot?.adult?.name : slot?.name;
+            const childName = children ? slot?.child?.name : null;
+            const x = LEFT + i * colW + 4, y = TOP + 32 + ri * rowH + 4;
+            const cw = colW - 8, ch = rowH - 8;
+            roundRectPath(ctx, x, y, cw, ch, 10);
+            ctx.fillStyle = name ? '#ffffff' : '#f9fafb'; ctx.fill();
+            ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1; ctx.stroke();
+            if (name) {
+              ctx.fillStyle = '#111827'; ctx.textAlign='center'; ctx.textBaseline='middle';
+              ctx.font = `bold 13px ${KO_FONT}`;
+              const maxW = cw - 12;
+              // Truncate text to fit
+              let txt = name;
+              while (ctx.measureText(txt).width > maxW && txt.length > 2) txt = txt.slice(0,-1);
+              if (txt !== name) txt = txt.slice(0,-1) + '…';
+              ctx.fillText(txt, x + cw/2, y + (childName ? ch*0.38 : ch/2));
+              if (childName) {
+                ctx.font = `11px ${KO_FONT}`; ctx.fillStyle = '#9ca3af';
+                let ct = childName;
+                while (ctx.measureText('👶'+ct).width > maxW && ct.length > 2) ct = ct.slice(0,-1);
+                if (ct !== childName) ct = ct.slice(0,-1) + '…';
+                ctx.fillText('👶'+ct, x + cw/2, y + ch*0.68);
+              }
+            }
+          }
+        });
+
+        // Footer URL
+        ctx.fillStyle = '#9ca3af'; ctx.font = `13px ${KO_FONT}`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText('peterpark3832.github.io/Family-meal-planner/', W/2, H - 8);
+
+        canvas.toBlob(async (blob) => {
+          const file = new File([blob], '식단표.png', { type:'image/png' });
+          try {
+            if (navigator.share && navigator.canShare?.({ files:[file] })) {
+              await navigator.share({ title:'우리 가족 식단표', files:[file] });
+            } else {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = `식단표_${new Date().toISOString().slice(0,10)}.png`;
+              a.click(); URL.revokeObjectURL(url);
+            }
+          } catch(e) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `식단표_${new Date().toISOString().slice(0,10)}.png`;
+            a.click(); URL.revokeObjectURL(url);
+          }
+          trackEvent('plan_image_shared', { period: config.period, week });
+        }, 'image/png');
       };
 
       const importJSON = (e) => {
@@ -2488,7 +2989,7 @@
                 className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                 ⭐<span className="hidden sm:inline ml-1">내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
               </button>
-              <button onClick={() => setShowShopping(true)} title="장보기"
+              <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }} title="장보기"
                 className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
                 🛒<span className="hidden sm:inline ml-1">장보기</span>
               </button>
@@ -2513,6 +3014,14 @@
                 📂<span className="hidden sm:inline ml-1">불러오기</span>
               </button>
               <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
+              <button onClick={exportToCalendar} title="캘린더 내보내기"
+                className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+                📅<span className="hidden sm:inline ml-1">캘린더</span>
+              </button>
+              <button onClick={shareImage} title="이미지로 공유"
+                className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-orange-50 hover:border-orange-300 transition-all touch-target">
+                🖼️<span className="hidden sm:inline ml-1">이미지</span>
+              </button>
               <button onClick={() => window.print()} title="인쇄"
                 className="hidden sm:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
                 🖨️<span className="hidden sm:inline ml-1">인쇄</span>
@@ -2524,8 +3033,17 @@
             </div>
           </div>
 
+          {/* 오늘의 식단 요약 카드 */}
+          <TodayCard
+            mealPlan={mealPlan}
+            config={config}
+            hasChildren={children}
+            onEdit={(day, mt, who) => setEdit({ day, mt, who })}
+            onRecipe={(name, cuisine) => openRecipe(name, cuisine)}
+          />
+
           {/* 통계 패널 */}
-          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} /></div>}
+          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} members={config.members} /></div>}
 
           {/* ── 모바일: 날짜탭 + 하루 카드 뷰 ── */}
           {IS_TOUCH ? (
@@ -2536,7 +3054,7 @@
               ratings={ratings}
               onEdit={(day, mt, who) => setEdit({ day, mt, who })}
               onRate={onRate}
-              onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
+              onRecipe={(name, cuisine) => openRecipe(name, cuisine)}
               onRegen={regenOne}
             />
           ) : (
@@ -2563,15 +3081,27 @@
               <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
                 <div className="week-scroll">
                   <div style={{display:'grid', gridTemplateColumns:`60px repeat(${daysInWeek}, minmax(90px,1fr))`}}>
-                    <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
+                    <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100 flex flex-col items-center justify-end">
+                      <span className="text-[9px] text-gray-400 font-medium">영양</span>
+                    </div>
                     {Array.from({length:daysInWeek}, (_,i) => {
                       const di = weekStart + i;
                       const dow = di % 7;
                       const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
+                      const dayNut = getDayNutrition(mealPlan[di], children);
+                      const dayNutTotal = Object.values(dayNut).reduce((a,b)=>a+b,0) || 1;
                       return (
                         <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
                           <div className={`text-[10px] font-medium ${isToday ? 'text-orange-400' : 'text-gray-400'}`}>{isToday ? '오늘' : `${di+1}일차`}</div>
                           <div className={`font-bold text-sm ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'today-header font-black' : 'text-gray-700'}`}>{WEEK_DAYS[dow]}</div>
+                          {/* 일별 영양 미니바 */}
+                          <div className="flex h-1.5 rounded-full overflow-hidden mt-1.5 gap-px" title="영양 분포">
+                            {Object.entries(NUTRITION_INFO).map(([key, info]) => {
+                              const pct = Math.round(dayNut[key] / dayNutTotal * 100);
+                              if (!pct) return null;
+                              return <div key={key} className={`h-full ${info.bar}`} style={{width:`${pct}%`}} />;
+                            })}
+                          </div>
                         </div>
                       );
                     })}
@@ -2596,7 +3126,7 @@
                                 onClickChild={children ? () => setEdit({ day:di, mt:mt.id, who:'child' }) : undefined}
                                 onRegen={(mode) => regenOne(di, mt.id, mode)}
                                 onRate={onRate}
-                                onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
+                                onRecipe={(name, cuisine) => openRecipe(name, cuisine)}
                                 ratings={ratings}
                               />
                             </div>
@@ -2681,6 +3211,7 @@
               mealPlan={mealPlan}
               period={config.period}
               hasChildren={children}
+              members={config.members}
               onClose={() => setShowShopping(false)}
             />
           )}
@@ -2762,7 +3293,18 @@
         } else {
           const minAge    = getMinAge(cfgOrConfig.members);
           const children  = hasKids(cfgOrConfig.members);
-          setMealPlan(generatePlan(cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy, children, customMeals, ratings, cfgOrConfig.allergens || [], cfgOrConfig.seasonBoost || false));
+          setMealPlan(generatePlan(
+            cfgOrConfig.period, cfgOrConfig.cuisines, minAge, cfgOrConfig.noSpicy,
+            children, customMeals, ratings, cfgOrConfig.allergens || [],
+            cfgOrConfig.seasonBoost || false, cfgOrConfig.preferQuick || false
+          ));
+          trackEvent('plan_generated', {
+            period: cfgOrConfig.period,
+            cuisines: cfgOrConfig.cuisines.join(','),
+            family_size: cfgOrConfig.members.length,
+            has_children: children,
+            prefer_quick: cfgOrConfig.preferQuick || false,
+          });
         }
         setScreen('plan');
       }, [customMeals, ratings]);
@@ -2771,7 +3313,12 @@
         if (!config) return;
         const minAge   = getMinAge(config.members);
         const children = hasKids(config.members);
-        setMealPlan(generatePlan(config.period, config.cuisines, minAge, config.noSpicy, children, customMeals, ratings, config.allergens || [], config.seasonBoost || false));
+        setMealPlan(generatePlan(
+          config.period, config.cuisines, minAge, config.noSpicy,
+          children, customMeals, ratings, config.allergens || [],
+          config.seasonBoost || false, config.preferQuick || false
+        ));
+        trackEvent('plan_regenerated', { period: config.period });
       }, [config, customMeals, ratings]);
 
       const saveTemplate = useCallback((name, cfg, plan) => {
@@ -2809,6 +3356,7 @@
           try { localStorage.setItem(RATING_KEY, JSON.stringify(next)); } catch(e) {}
           return next;
         });
+        trackEvent('meal_rated', { meal: mealName, rating: type });
       }, []);
 
       const handleImport = useCallback((cfg, plan) => {
@@ -2866,7 +3414,44 @@
       );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // ═══════════════════════════════════════════════════
+    //  React Error Boundary — 예기치 못한 오류로 앱 전체가 흰 화면이 되는 것을 방지
+    // ═══════════════════════════════════════════════════
+    class ErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+      static getDerivedStateFromError(error) { return { hasError: true, error }; }
+      componentDidCatch(error, info) {
+        try { trackEvent('app_error', { message: error?.message?.slice(0, 100) }); } catch(e) {}
+      }
+      render() {
+        if (!this.state.hasError) return this.props.children;
+        return (
+          <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-amber-50 to-orange-50">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
+              <div className="text-5xl mb-4">😅</div>
+              <h2 className="text-xl font-black text-gray-800 mb-2">앗, 오류가 발생했어요</h2>
+              <p className="text-sm text-gray-500 mb-6">데이터를 초기화하거나 페이지를 새로고침해 보세요.</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => { try { localStorage.removeItem(SAVE_KEY); } catch(e) {} this.setState({ hasError: false }); }}
+                  className="w-full py-3 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-all">
+                  식단 초기화 후 재시작
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all">
+                  페이지 새로고침
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <ErrorBoundary><App /></ErrorBoundary>
+    );
   </script>
 
   <script>
