@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+* { font-family: 'Noto Sans KR', sans-serif; box-sizing: border-box; }
+
+.meal-card { transition: all 0.15s ease; }
+.meal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.13); }
+.meal-card:active { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.10); }
+
+/* 호버 지원 기기(마우스): dice-btn 숨김 → hover 시 표시 */
+@media (hover: hover) {
+  .dice-btn { opacity: 0; transition: opacity 0.15s; }
+  .cell-wrap:hover .dice-btn { opacity: 1; }
+}
+/* 터치 기기: dice-btn 항상 표시 */
+@media (hover: none) {
+  .dice-btn { opacity: 1; }
+  .meal-card:hover { transform: none; box-shadow: none; }
+}
+
+.week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.week-scroll::-webkit-scrollbar { height: 5px; }
+.week-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+.fade-in  { animation: fadeIn 0.22s ease; }
+.slide-up { animation: slideUp 0.28s ease; }
+@keyframes fadeIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .no-print { display: none !important; }
+  body { background: white !important; }
+  .print-wrap { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+  .print-title { display: block !important; text-align: center; font-size: 18px; font-weight: 900; margin-bottom: 12px; }
+}
+.print-title { display: none; }
+.today-col { background: linear-gradient(to bottom, #fff7ed, #fff) !important; }
+.today-header { color: #ea580c !important; }
+
+@media (max-width: 640px) {
+  .touch-target { min-width: 36px; min-height: 36px; }
+}
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
