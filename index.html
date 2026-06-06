@@ -638,11 +638,29 @@
         .sort((a, b) => b.priority - a.priority)
         .map(x => x.m);
 
+    // 하루 영양 다양성을 고려한 가중 셔플 — 당일 이미 선택된 영양 유형과 다른 메뉴에 보너스 부여
+    const ratedShuffleBalanced = (arr, ratings = {}, seasonBoost = false, dayNutrition = []) =>
+      arr
+        .map(m => {
+          const r = ratings[m.name] || { likes:0, dislikes:0 };
+          const score = r.likes - r.dislikes;
+          let weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          if (seasonBoost && MEAL_SEASONS[m.name]?.includes(CURRENT_SEASON)) weight *= 1.8;
+          // 이미 선택된 영양 유형이 아닌 경우 1.6× 가중치 → 하루 3끼 영양 다양성 확보
+          const nutType = MEAL_NUTRITION[m.name];
+          if (nutType && dayNutrition.length > 0 && !dayNutrition.includes(nutType)) weight *= 1.6;
+          return { m, priority: Math.random() * weight };
+        })
+        .sort((a, b) => b.priority - a.priority)
+        .map(x => x.m);
+
     function generatePlan(period, cuisines, minAge, noSpicy = false, childrenPresent = false, customMeals = [], ratings = {}, allergens = [], seasonBoost = false) {
       const plan = {};
       for (let d = 0; d < period; d++) {
         plan[d] = {};
         const lookback = Math.max(0, d - 10);
+        const dayNutritionAdult = [];
+        const dayNutritionChild = [];
 
         for (const mt of ['breakfast','lunch','dinner']) {
           if (childrenPresent) {
@@ -657,15 +675,17 @@
             }
 
             const freshAdult = adultPool.filter(m => !usedAdult.has(m.name));
-            const chosenAdult = ratedShuffle(freshAdult.length ? freshAdult : adultPool, ratings, seasonBoost)[0]
+            const chosenAdult = ratedShuffleBalanced(freshAdult.length ? freshAdult : adultPool, ratings, seasonBoost, dayNutritionAdult)[0]
               || { name:'직접 입력', cuisine:'custom' };
+            if (MEAL_NUTRITION[chosenAdult.name]) dayNutritionAdult.push(MEAL_NUTRITION[chosenAdult.name]);
 
             const childExcludes = new Set([...usedChild, chosenAdult.name]);
             const freshChildDiff = childPool.filter(m => !childExcludes.has(m.name));
             const freshChild     = childPool.filter(m => !usedChild.has(m.name));
-            const chosenChild = ratedShuffle(
-              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings, seasonBoost
+            const chosenChild = ratedShuffleBalanced(
+              freshChildDiff.length ? freshChildDiff : (freshChild.length ? freshChild : childPool), ratings, seasonBoost, dayNutritionChild
             )[0] || { name:'직접 입력', cuisine:'custom' };
+            if (MEAL_NUTRITION[chosenChild.name]) dayNutritionChild.push(MEAL_NUTRITION[chosenChild.name]);
 
             plan[d][mt] = {
               adult: { name: chosenAdult.name, cuisine: chosenAdult.cuisine },
@@ -679,8 +699,9 @@
               if (plan[wd]?.[mt]?.name) used.add(plan[wd][mt].name);
             }
             const fresh = pool.filter(m => !used.has(m.name));
-            const chosen = ratedShuffle(fresh.length ? fresh : pool, ratings, seasonBoost)[0];
+            const chosen = ratedShuffleBalanced(fresh.length ? fresh : pool, ratings, seasonBoost, dayNutritionAdult)[0];
             plan[d][mt] = { name: chosen.name, cuisine: chosen.cuisine };
+            if (MEAL_NUTRITION[chosen.name]) dayNutritionAdult.push(MEAL_NUTRITION[chosen.name]);
           }
         }
       }
@@ -692,6 +713,37 @@
       if (!pool.length) return null;
       return ratedShuffle(pool, ratings, seasonBoost)[0];
     }
+
+    // 하루 영양 구성 분석 (protein/veggie/carb/balanced)
+    const getDayNutrition = (dayPlan, hasChildren) => {
+      const types = { protein:0, veggie:0, carb:0, balanced:0 };
+      for (const mt of ['breakfast','lunch','dinner']) {
+        const slot = dayPlan?.[mt];
+        if (!slot) continue;
+        const name = hasChildren ? slot.adult?.name : slot.name;
+        const t = MEAL_NUTRITION[name];
+        if (t && types[t] !== undefined) types[t]++;
+      }
+      return types;
+    };
+
+    // 가족 구성원별 1일 권장 칼로리 추정 (나이·성별 기반 간이 계산)
+    const getRecommendedKcal = (member) => {
+      const age = parseInt(member.age) || 30;
+      if (member.type === 'child') {
+        if (age <= 2)  return 900;
+        if (age <= 5)  return 1200;
+        if (age <= 8)  return 1400;
+        if (age <= 11) return 1600;
+        if (age <= 14) return member.gender === 'male' ? 2000 : 1700;
+        return member.gender === 'male' ? 2200 : 1800;
+      }
+      // 성인
+      if (age < 30) return member.gender === 'male' ? 2300 : 1900;
+      if (age < 50) return member.gender === 'male' ? 2000 : 1700;
+      if (age < 65) return member.gender === 'male' ? 1900 : 1600;
+      return member.gender === 'male' ? 1700 : 1500;
+    };
 
     function formatTime(ts) {
       if (!ts) return '';
@@ -1668,7 +1720,7 @@
       balanced: { label:'균형',     emoji:'⚖️', bar:'bg-blue-400'   },
     };
 
-    function StatsPanel({ mealPlan, period, hasChildren }) {
+    function StatsPanel({ mealPlan, period, hasChildren, members = [] }) {
       const { cuisineCounts, nutritionCounts, totalKcal, mealCount } = useMemo(() => {
         const c = { korean:0, western:0, chinese:0, japanese:0, custom:0 };
         const n = { protein:0, veggie:0, carb:0, balanced:0, unknown:0 };
@@ -1699,7 +1751,12 @@
       const cTotal = Object.values(cuisineCounts).reduce((a,b) => a+b, 0) || 1;
       const nTotal = (Object.values(nutritionCounts).reduce((a,b) => a+b, 0) - nutritionCounts.unknown) || 1;
       const avgDailyKcal = mealCount > 0 ? Math.round(totalKcal / period) : 0;
-      const kcalPct = Math.min(Math.round(avgDailyKcal / 2000 * 100), 150);
+
+      // 가족 전체 권장 칼로리 합산 (1인 기준이면 개인 목표, 여러 명이면 합산)
+      const targetKcal = members.length > 0
+        ? members.reduce((sum, m) => sum + getRecommendedKcal(m), 0)
+        : 2000;
+      const kcalPct = avgDailyKcal > 0 ? Math.min(Math.round(avgDailyKcal / targetKcal * 100), 150) : 0;
 
       return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 no-print space-y-4">
@@ -1710,11 +1767,30 @@
               <div className="flex items-end gap-3 mb-2">
                 <span className="text-2xl font-black text-orange-500">{avgDailyKcal.toLocaleString()}</span>
                 <span className="text-xs text-gray-400 mb-1">kcal / 일 평균</span>
-                <span className="ml-auto text-xs text-gray-400 mb-1">권장 2,000kcal 대비 <span className={`font-bold ${kcalPct > 120 ? 'text-red-500' : kcalPct < 80 ? 'text-blue-500' : 'text-green-600'}`}>{kcalPct}%</span></span>
+                <span className="ml-auto text-xs text-gray-400 mb-1">가족 권장 {targetKcal.toLocaleString()}kcal 대비 <span className={`font-bold ${kcalPct > 120 ? 'text-red-500' : kcalPct < 80 ? 'text-blue-500' : 'text-green-600'}`}>{kcalPct}%</span></span>
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${kcalPct > 120 ? 'bg-red-400' : kcalPct < 80 ? 'bg-blue-400' : 'bg-orange-400'}`} style={{width:`${Math.min(kcalPct, 100)}%`}} />
               </div>
+              {/* 가족 구성원별 권장량 상세 */}
+              {members.length > 1 && (
+                <div className="mt-3 space-y-1.5">
+                  {members.map((m, i) => {
+                    const rec = getRecommendedKcal(m);
+                    const icon = m.type === 'child' ? '🧒' : m.gender === 'male' ? '👨' : '👩';
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-[11px]">
+                        <span className="flex-shrink-0">{icon}</span>
+                        <span className="text-gray-500 flex-shrink-0">{m.type==='adult'?'성인':'자녀'} {m.age}세</span>
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-orange-300 rounded-full" style={{width:`${Math.min(Math.round(rec/3000*100), 100)}%`}} />
+                        </div>
+                        <span className="text-gray-400 flex-shrink-0 w-16 text-right">{rec.toLocaleString()} kcal</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {kcalPct > 120 && <p className="text-[10px] text-red-500 mt-1.5 bg-red-50 rounded-lg px-2 py-1">💡 칼로리가 높아요. 저칼로리 메뉴를 일부 추가해보세요.</p>}
               {kcalPct < 80 && <p className="text-[10px] text-blue-500 mt-1.5 bg-blue-50 rounded-lg px-2 py-1">💡 칼로리가 부족할 수 있어요. 단백질 메뉴를 추가해보세요.</p>}
             </div>
@@ -1877,6 +1953,92 @@
               </div>
             </div>
           </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  컴포넌트: 오늘의 식단 요약 카드
+    // ═══════════════════════════════════════════════════
+    function TodayCard({ mealPlan, config, hasChildren, onEdit, onRecipe }) {
+      const todayDow = new Date().getDay();
+      const todayIdx = todayDow === 0 ? 6 : todayDow - 1;
+
+      // 플랜에서 오늘에 해당하는 첫 번째 날 인덱스 탐색
+      let planDayIdx = -1;
+      for (let i = 0; i < config.period; i++) {
+        if (i % 7 === todayIdx) { planDayIdx = i; break; }
+      }
+      if (planDayIdx < 0) return null;
+
+      const todayMeals = mealPlan[planDayIdx];
+      if (!todayMeals) return null;
+
+      // 오늘 총 칼로리 (성인 기준)
+      const todayKcal = MEAL_TYPES.reduce((sum, mt) => {
+        const slot = todayMeals[mt.id];
+        const name = hasChildren ? slot?.adult?.name : slot?.name;
+        return sum + (name ? getCalories(name) : 0);
+      }, 0);
+
+      const dayNut = getDayNutrition(todayMeals, hasChildren);
+      const nutTotal = Object.values(dayNut).reduce((a,b)=>a+b,0) || 1;
+
+      const WEEK_LABELS = ['일','월','화','수','목','금','토'];
+      const dayLabel = WEEK_LABELS[todayDow] + '요일';
+
+      return (
+        <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-rose-500 rounded-2xl p-4 mb-5 shadow-lg text-white no-print fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-[11px] font-semibold opacity-80 tracking-wide">📅 오늘의 식단</div>
+              <div className="text-xl font-black leading-tight">{dayLabel}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] opacity-75">오늘 예상 칼로리</div>
+              <div className="text-2xl font-black">{todayKcal > 0 ? todayKcal.toLocaleString() : '—'}<span className="text-xs ml-1 opacity-80">kcal</span></div>
+            </div>
+          </div>
+
+          {/* 3끼 카드 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {MEAL_TYPES.map(mt => {
+              const slot = todayMeals[mt.id];
+              const name = hasChildren ? slot?.adult?.name : slot?.name;
+              const cuisine = hasChildren ? slot?.adult?.cuisine : slot?.cuisine;
+              const info = CUISINE_INFO[cuisine || 'custom'];
+              return (
+                <div key={mt.id}
+                  onClick={() => onEdit(planDayIdx, mt.id, null)}
+                  className="bg-white/20 backdrop-blur-sm rounded-xl p-2.5 cursor-pointer hover:bg-white/30 active:bg-white/35 transition-all">
+                  <div className="text-[10px] font-semibold opacity-80 mb-1">{mt.emoji} {mt.label}</div>
+                  <div className="text-xs font-bold leading-tight truncate">{name || <span className="opacity-50">미설정</span>}</div>
+                  {name && (
+                    <div className="text-[10px] opacity-70 mt-0.5">{getCalories(name)}kcal · {info.label}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 오늘 영양 분포 미니바 */}
+          {todayKcal > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] opacity-70 flex-shrink-0">영양</span>
+              <div className="flex-1 h-2 rounded-full overflow-hidden flex gap-px bg-white/20">
+                {Object.entries(NUTRITION_INFO).map(([key, info]) => {
+                  const pct = Math.round(dayNut[key] / nutTotal * 100);
+                  if (!pct) return null;
+                  return <div key={key} className={`h-full ${info.bar} opacity-90`} style={{width:`${pct}%`}} title={`${info.label} ${pct}%`} />;
+                })}
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                {Object.entries(NUTRITION_INFO).map(([key, info]) => dayNut[key] > 0 && (
+                  <span key={key} className="text-[9px] opacity-80">{info.emoji}{dayNut[key]}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -2524,8 +2686,17 @@
             </div>
           </div>
 
+          {/* 오늘의 식단 요약 카드 */}
+          <TodayCard
+            mealPlan={mealPlan}
+            config={config}
+            hasChildren={children}
+            onEdit={(day, mt, who) => setEdit({ day, mt, who })}
+            onRecipe={(name, cuisine) => setRecipeMeal({ name, cuisine })}
+          />
+
           {/* 통계 패널 */}
-          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} /></div>}
+          {showStats && <div className="mb-4"><StatsPanel mealPlan={mealPlan} period={config.period} hasChildren={children} members={config.members} /></div>}
 
           {/* ── 모바일: 날짜탭 + 하루 카드 뷰 ── */}
           {IS_TOUCH ? (
@@ -2563,15 +2734,27 @@
               <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden print-wrap">
                 <div className="week-scroll">
                   <div style={{display:'grid', gridTemplateColumns:`60px repeat(${daysInWeek}, minmax(90px,1fr))`}}>
-                    <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100" />
+                    <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-b border-r border-gray-100 flex flex-col items-center justify-end">
+                      <span className="text-[9px] text-gray-400 font-medium">영양</span>
+                    </div>
                     {Array.from({length:daysInWeek}, (_,i) => {
                       const di = weekStart + i;
                       const dow = di % 7;
                       const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
+                      const dayNut = getDayNutrition(mealPlan[di], children);
+                      const dayNutTotal = Object.values(dayNut).reduce((a,b)=>a+b,0) || 1;
                       return (
                         <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
                           <div className={`text-[10px] font-medium ${isToday ? 'text-orange-400' : 'text-gray-400'}`}>{isToday ? '오늘' : `${di+1}일차`}</div>
                           <div className={`font-bold text-sm ${isSat ? 'text-blue-500' : isSun ? 'text-red-500' : isToday ? 'today-header font-black' : 'text-gray-700'}`}>{WEEK_DAYS[dow]}</div>
+                          {/* 일별 영양 미니바 */}
+                          <div className="flex h-1.5 rounded-full overflow-hidden mt-1.5 gap-px" title="영양 분포">
+                            {Object.entries(NUTRITION_INFO).map(([key, info]) => {
+                              const pct = Math.round(dayNut[key] / dayNutTotal * 100);
+                              if (!pct) return null;
+                              return <div key={key} className={`h-full ${info.bar}`} style={{width:`${pct}%`}} />;
+                            })}
+                          </div>
                         </div>
                       );
                     })}
