@@ -366,7 +366,7 @@ import './index.css';
       '김치전':320,'감자전':300,'녹두전':340,'동태찌개':300,'대구탕':280,
       '갈비탕':520,'꼬리곰탕':480,'우족탕':500,'낙지볶음':340,'주꾸미볶음':320,
       '아귀찜':380,'해물찜':400,'꽃게탕':350,'대게찜':380,'전복구이':320,
-      '삼계탕':580,'닭한마리':520,'닭갈비':520,'찜닭':500,'닭강정':560,
+      '삼계탕':580,'닭한마리':520,'찜닭':500,'닭강정':560,
       '콩국수':380,'물냉면':460,'비빔냉면':520,'막국수':420,'잔치국수':380,
       '쌈밥':480,'보쌈':600,'족발':680,'곱창볶음':520,'대창볶음':560,
       '해물된장찌개':340,'차돌박이구이':620,'소고기뭇국':350,'미역국':180,
@@ -463,7 +463,7 @@ import './index.css';
       '아게다시두부':['soy','gluten'],
       // 해산물(생선)
       '고등어조림':['seafood'],'삼치구이':['seafood'],'참치김치찌개':['seafood'],
-      '황태해장국':['seafood','egg'],'전복죽':['shellfish'],'동태찌개':['seafood'],
+      '전복죽':['shellfish'],'동태찌개':['seafood'],
       '포케볼':['seafood'],
       // 갑각류·연체류
       '순두부찌개':['shellfish','soy'],'오징어볶음':['shellfish'],
@@ -511,7 +511,7 @@ import './index.css';
       '감자탕':'balanced','비빔밥':'balanced','잡채':'balanced','쌈밥':'balanced',
       '카레라이스':'balanced','소불고기덮밥':'balanced','샤브샤브':'balanced',
       '스키야키':'balanced','훠궈 (전골)':'balanced','나베 (전골)':'balanced',
-      '육개장':'balanced','갈비탕':'balanced','소고기뭇국':'balanced',
+      '육개장':'balanced','소고기뭇국':'balanced',
     };
 
     // ── 조리 시간 분류 (빠름: ~20분 / 보통: 20-40분 / 느림: 40분+) ────────────
@@ -607,7 +607,7 @@ import './index.css';
         .map(m => {
           const r = ratings[m.name] || { likes:0, dislikes:0 };
           const score = r.likes - r.dislikes;
-          let weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          let weight = score >= 2 ? 3 : score === 1 ? 2 : score <= -1 ? 0.5 : 1;
           if (seasonBoost && MEAL_SEASONS[m.name]?.includes(CURRENT_SEASON)) weight *= 1.8;
           return { m, priority: Math.random() * weight };
         })
@@ -620,7 +620,7 @@ import './index.css';
         .map(m => {
           const r = ratings[m.name] || { likes:0, dislikes:0 };
           const score = r.likes - r.dislikes;
-          let weight = score >= 2 ? 3 : score === 1 ? 2 : score === -1 ? 0.5 : 1;
+          let weight = score >= 2 ? 3 : score === 1 ? 2 : score <= -1 ? 0.5 : 1;
           if (seasonBoost && MEAL_SEASONS[m.name]?.includes(CURRENT_SEASON)) weight *= 1.8;
           // 하루 내 영양 다양성: 아직 없는 영양 유형에 보너스
           const nutType = MEAL_NUTRITION[m.name];
