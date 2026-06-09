@@ -49,7 +49,7 @@ export default function TodayCard({ mealPlan, config, hasChildren, onEdit, onRec
           const info = CUISINE_INFO[cuisine || 'custom'];
           return (
             <div key={mt.id}
-              onClick={() => onEdit(planDayIdx, mt.id, null)}
+              onClick={() => onEdit(planDayIdx, mt.id, hasChildren ? 'adult' : null)}
               className="bg-white/20 backdrop-blur-sm rounded-xl p-2.5 cursor-pointer hover:bg-white/30 active:bg-white/35 transition-all">
               <div className="text-[10px] font-semibold opacity-80 mb-1">{mt.emoji} {mt.label}</div>
               <div className="text-xs font-bold leading-tight truncate">{name || <span className="opacity-50">미설정</span>}</div>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { CUISINE_INFO, MEAL_TYPES, WEEK_DAYS, NUTRITION_INFO, IS_TOUCH } from '../data/config.js';
 import { getMinAge, hasKids, getDayNutrition, formatTime, trackEvent } from '../utils/helpers.js';
 import { pickOneMeal } from '../utils/algorithm.js';
@@ -16,14 +16,23 @@ import TodayCard from './TodayCard.jsx';
 export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onBack, onRegen, onImport, customMeals = [], onAddCustomMeal, onDeleteCustomMeal, ratings = {}, onRate, templates = [], onSaveTemplate, onLoadTemplate, onDeleteTemplate, onHelp }) {
   const [week, setWeek]             = useState(0);
   const [editTarget, setEdit]       = useState(null);
-  const [copied, setCopied]         = useState(false);
   const [showStats, setShowStats]   = useState(false);
   const [showCustomDB, setShowCustomDB]     = useState(false);
   const [showShopping, setShowShopping]     = useState(false);
   const [showTemplate, setShowTemplate]     = useState(false);
   const [recipeMeal, setRecipeMeal]         = useState(null);
-  const fileInputRef = React.useRef(null);
+  const [toast, setToast]                   = useState(null);
+  const toastTimer = useRef(null);
+  const fileInputRef = useRef(null);
+
   const allergens = config?.allergens || [];
+
+  const showToastMsg = useCallback((msg) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }, []);
+
   const openRecipe = useCallback((name, cuisine) => {
     setRecipeMeal({ name, cuisine });
     trackEvent('recipe_searched', { meal: name, cuisine });
@@ -38,7 +47,17 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
   const todayDow    = new Date().getDay();
   const todayIdx    = todayDow === 0 ? 6 : todayDow - 1;
 
-  const saveMeal = ({ name, cuisine, note }) => {
+  // Memoize per-day nutrition so grid header doesn't recompute each render
+  const weekDayNutrition = useMemo(() => {
+    const result = {};
+    for (let i = 0; i < daysInWeek; i++) {
+      const di = weekStart + i;
+      result[di] = getDayNutrition(mealPlan[di], children);
+    }
+    return result;
+  }, [mealPlan, weekStart, daysInWeek, children]);
+
+  const saveMeal = useCallback(({ name, cuisine, note }) => {
     const { day, mt, who } = editTarget;
     setMealPlan(prev => {
       const dayPlan = { ...prev[day] };
@@ -50,9 +69,9 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       return { ...prev, [day]: dayPlan };
     });
     setEdit(null);
-  };
+  }, [editTarget, setMealPlan]);
 
-  const copyWeekToNext = () => {
+  const copyWeekToNext = useCallback(() => {
     if (totalWeeks < 2) return;
     const srcStart = week * 7;
     const dstStart = (week + 1) * 7;
@@ -66,9 +85,9 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       }
       return next;
     });
-  };
+  }, [week, totalWeeks, config.period, setMealPlan]);
 
-  const regenOne = (day, mt, mode) => {
+  const regenOne = useCallback((day, mt, mode) => {
     if (mode === 'both') {
       const adultCur = mealPlan[day]?.[mt]?.adult?.name;
       const childCur = mealPlan[day]?.[mt]?.child?.name;
@@ -91,9 +110,9 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       if (!chosen) return;
       setMealPlan(prev => ({ ...prev, [day]: { ...prev[day], [mt]: { name: chosen.name, cuisine: chosen.cuisine } } }));
     }
-  };
+  }, [mealPlan, config, customMeals, ratings, allergens, minAge, setMealPlan]);
 
-  const exportJSON = () => {
+  const exportJSON = useCallback(() => {
     const payload = JSON.stringify({ config, mealPlan, exportedAt: Date.now() }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
@@ -102,36 +121,40 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
     a.download = `식단플래너_${new Date().toISOString().slice(0,10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [config, mealPlan]);
 
-  const importJSON = (e) => {
+  const importJSON = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target.result);
-        if (data?.config && data?.mealPlan) onImport(data.config, data.mealPlan);
-        else alert('올바른 식단 플래너 백업 파일이 아닙니다.');
-      } catch { alert('파일을 읽을 수 없습니다.'); }
+        if (data?.config && data?.mealPlan) {
+          onImport(data.config, data.mealPlan);
+          showToastMsg('✓ 식단을 불러왔습니다');
+        } else {
+          showToastMsg('⚠️ 올바른 백업 파일이 아닙니다');
+        }
+      } catch {
+        showToastMsg('⚠️ 파일을 읽을 수 없습니다');
+      }
       e.target.value = '';
     };
     reader.readAsText(file);
-  };
+  }, [onImport, showToastMsg]);
 
-  const shareApp = () => {
+  const shareApp = useCallback(() => {
     const url  = 'https://peterpark3832.github.io/Family-meal-planner/';
     const text = `${config.period}일 가족 식단표를 자동으로 만들었어요! 무료로 써보세요 🍽️`;
     if (navigator.share) {
       navigator.share({ title: '우리 가족 식단 플래너', text, url }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(url).then(() => {
-        setCopied(true); setTimeout(() => setCopied(false), 2000);
-      });
+      navigator.clipboard.writeText(url).then(() => showToastMsg('✓ 링크를 복사했습니다'));
     }
-  };
+  }, [config.period, showToastMsg]);
 
-  const exportText = () => {
+  const exportText = useCallback(() => {
     const lines = [`🍽️ 우리 가족 식단표 (${config.period}일)`];
     if (children) lines.push('📌 [성인] / [아이] 분리 식단\n');
     else lines.push('');
@@ -159,11 +182,8 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       }
       lines.push('');
     }
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
+    navigator.clipboard.writeText(lines.join('\n')).then(() => showToastMsg('✓ 텍스트를 복사했습니다'));
+  }, [config, mealPlan, children, totalWeeks, showToastMsg]);
 
   return (
     <div className="max-w-5xl mx-auto p-3 py-6">
@@ -202,8 +222,8 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
             🔄<span className="hidden sm:inline ml-1">재생성</span>
           </button>
           <button onClick={exportText} title="텍스트 복사"
-            className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${copied ? 'bg-green-50 border-green-300 text-green-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            {copied ? '✓' : '📋'}<span className="hidden sm:inline ml-1">{copied ? '복사됨!' : '복사'}</span>
+            className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
+            📄<span className="hidden sm:inline ml-1">복사</span>
           </button>
           <button onClick={exportJSON} title="JSON 저장"
             className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
@@ -226,9 +246,9 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
             className="hidden sm:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
             🖨️<span className="hidden sm:inline ml-1">인쇄</span>
           </button>
-          <button onClick={shareApp} title="공유하기"
+          <button onClick={shareApp} aria-label="앱 공유하기"
             className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center justify-center touch-target">🔗</button>
-          <button onClick={onHelp} title="사용 가이드"
+          <button onClick={onHelp} aria-label="사용 가이드"
             className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all flex items-center justify-center touch-target">?</button>
         </div>
       </div>
@@ -283,7 +303,7 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
                   const di = weekStart + i;
                   const dow = di % 7;
                   const isSat = dow === 5, isSun = dow === 6, isToday = dow === todayIdx && week === 0;
-                  const dayNut = getDayNutrition(mealPlan[di], children);
+                  const dayNut = weekDayNutrition[di] || {};
                   const dayNutTotal = Object.values(dayNut).reduce((a,b)=>a+b,0) || 1;
                   return (
                     <div key={i} className={`p-3 text-center border-b border-l border-gray-100 transition-colors ${isToday ? 'today-col' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
@@ -409,6 +429,12 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
           cuisine={recipeMeal.cuisine}
           onClose={() => setRecipeMeal(null)}
         />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-xl z-[60] fade-in pointer-events-none">
+          {toast}
+        </div>
       )}
     </div>
   );

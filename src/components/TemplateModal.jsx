@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CUISINE_INFO } from '../data/config.js';
 import { formatTime } from '../utils/helpers.js';
 
 export default function TemplateModal({ templates, currentConfig, currentPlan, onSave, onLoad, onDelete, onClose }) {
   const [name, setName] = useState('');
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const handleSave = () => {
     if (!name.trim()) return;

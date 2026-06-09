@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CUISINE_INFO, CAT_ORDER, CAT_EMOJI } from '../data/config.js';
 import { MEALS } from '../data/meals.js';
 import { MEAL_INGREDIENTS, INGREDIENT_CATEGORY, INGREDIENT_QUANTITY } from '../data/ingredients.js';
@@ -8,6 +8,12 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
   const [checked, setChecked]   = useState(new Set());
   const [copied, setCopied]     = useState(false);
   const [view, setView]         = useState('category');
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const { grouped, totalCount, mealList, ingToMeals, mealCounts } = useMemo(() => {
     const mealNames = new Set();
@@ -60,7 +66,7 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
       .sort()
       .map(name => ({
         name,
-        cuisine: [...MEALS].find(m => m.name === name)?.cuisine || 'custom',
+        cuisine: MEALS.find(m => m.name === name)?.cuisine || 'custom',
         ingredients: MEAL_INGREDIENTS[name] || [],
       }));
 
@@ -178,7 +184,7 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
                             {!checked.has(item) && ingToMeals[item] && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {ingToMeals[item].slice(0, 4).map(meal => {
-                                  const c = [...MEALS].find(m => m.name === meal)?.cuisine || 'custom';
+                                  const c = MEALS.find(m => m.name === meal)?.cuisine || 'custom';
                                   return (
                                     <span key={meal} className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CUISINE_INFO[c].badge} ${CUISINE_INFO[c].border}`}>
                                       {meal}

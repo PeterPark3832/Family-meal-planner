@@ -1,29 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { MEALS } from '../data/meals.js';
-import { CUISINE_INFO, MEAL_TYPES } from '../data/config.js';
-import { MEAL_ALLERGENS } from '../data/ingredients.js';
+import React, { useState, useMemo, useEffect } from 'react';
+import { CUISINE_INFO, MEAL_TYPES, IS_TOUCH } from '../data/config.js';
 import { getMinAge, hasKids, coupangUrl } from '../utils/helpers.js';
-
-const shuffle = (arr) => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
-
-const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = [], ratings = {}, allergens = []) => {
-  const all = [...MEALS, ...customMeals];
-  return all.filter(m =>
-    (m.isUserCustom || cuisines.includes(m.cuisine)) &&
-    m.types.includes(mealType) &&
-    m.minAge <= minAge &&
-    (!noSpicy || !m.spicy) &&
-    ((ratings[m.name]?.likes || 0) - (ratings[m.name]?.dislikes || 0)) > -2 &&
-    (allergens.length === 0 || !(MEAL_ALLERGENS[m.name] || []).some(a => allergens.includes(a)))
-  );
-};
+import { getPool, shuffle } from '../utils/algorithm.js';
 
 export default function EditModal({ dayIdx, mealType, meal, config, minAge, who, onSave, onClose, customMeals = [], onAddCustomMeal }) {
   const [search, setSearch]     = useState('');
@@ -35,6 +13,12 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
   const [dbTypes, setDbTypes]   = useState([mealType]);
   const [dbMinAge, setDbMinAge] = useState(0);
   const [dbSpicy, setDbSpicy]   = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const whoLabel  = who === 'adult' ? ' · 성인' : who === 'child' ? ' · 아이' : '';
   const mealLabel = (MEAL_TYPES.find(m => m.id === mealType)?.label || '') + whoLabel;
@@ -86,7 +70,7 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
               <p className="text-xs text-orange-500 font-semibold">{dayIdx+1}일차</p>
               <h3 className="text-lg font-bold text-gray-800">{mealLabel} 메뉴 선택</h3>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl mt-0.5">✕</button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl mt-0.5" aria-label="닫기">✕</button>
           </div>
           <div className="flex gap-2 mt-3">
             {['suggest','custom'].map(t => (
@@ -104,7 +88,7 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
               <div className="relative mb-3">
                 <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="메뉴 검색..." autoFocus={window.innerWidth > 640}
+                  placeholder="메뉴 검색..." autoFocus={!IS_TOUCH}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm pl-9 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
               </div>
               {suggestions.length === 0 ? (
@@ -143,7 +127,7 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
                   onKeyDown={e => { if(e.key==='Enter' && customText.trim()) confirmSave({name:customText.trim(), cuisine:'custom'}); }}
                   placeholder="예) 엄마표 불고기, 오늘의 도시락..."
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                  autoFocus={window.innerWidth > 640} />
+                  autoFocus={!IS_TOUCH} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">메모 <span className="font-normal text-gray-400">(선택)</span></label>
@@ -152,6 +136,7 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
               </div>
               <button onClick={() => setSaveToDb(v => !v)}
+                role="switch" aria-checked={saveToDb}
                 className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${saveToDb ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">⭐</span>
@@ -160,8 +145,8 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
                     <div className="text-[10px] text-gray-400">추천 목록에 항상 표시됩니다</div>
                   </div>
                 </div>
-                <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${saveToDb ? 'bg-yellow-400' : 'bg-gray-200'}`}>
-                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm mt-0.5 transition-all ${saveToDb ? 'ml-4' : 'ml-0.5'}`} />
+                <div className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${saveToDb ? 'bg-yellow-400' : 'bg-gray-200'}`}>
+                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${saveToDb ? 'translate-x-4' : 'translate-x-0'}`} />
                 </div>
               </button>
               {saveToDb && (
@@ -207,7 +192,7 @@ export default function EditModal({ dayIdx, mealType, meal, config, minAge, who,
                 <input type="text" value={note} onChange={e => setNote(e.target.value)}
                   onKeyDown={e => { if(e.key==='Enter') confirmSave(pendingMeal); }}
                   placeholder="재료, 소스, 주의사항 등..."
-                  autoFocus={window.innerWidth > 640}
+                  autoFocus={!IS_TOUCH}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
               </div>
               <div className="flex gap-2">
