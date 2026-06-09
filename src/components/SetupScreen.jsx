@@ -146,6 +146,7 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
 
       <button
         onClick={() => setNoSpicy(v => !v)}
+        role="switch" aria-checked={noSpicy}
         className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${noSpicy ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
         <div className="flex items-center gap-3">
           <span className="text-xl">🌶️</span>
@@ -154,13 +155,14 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
             <div className="text-xs text-gray-400 mt-0.5">제육볶음, 김치찌개, 짬뽕 등 🌶️ 음식을 추천에서 뺍니다</div>
           </div>
         </div>
-        <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${noSpicy ? 'bg-rose-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${noSpicy ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${noSpicy ? 'bg-rose-500' : 'bg-gray-200'}`}>
+          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${noSpicy ? 'translate-x-4' : 'translate-x-0'}`} />
         </div>
       </button>
 
       <button
         onClick={() => setSeasonBoost(v => !v)}
+        role="switch" aria-checked={seasonBoost}
         className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${seasonBoost ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
         <div className="flex items-center gap-3">
           <span className="text-xl">{seasonEmojis[CURRENT_SEASON]}</span>
@@ -169,13 +171,14 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
             <div className="text-xs text-gray-400 mt-0.5">현재 계절에 어울리는 메뉴를 더 자주 추천합니다</div>
           </div>
         </div>
-        <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${seasonBoost ? 'bg-green-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${seasonBoost ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${seasonBoost ? 'bg-green-500' : 'bg-gray-200'}`}>
+          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${seasonBoost ? 'translate-x-4' : 'translate-x-0'}`} />
         </div>
       </button>
 
       <button
         onClick={() => setPreferQuick(v => !v)}
+        role="switch" aria-checked={preferQuick}
         className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${preferQuick ? 'border-sky-400 bg-sky-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
         <div className="flex items-center gap-3">
           <span className="text-xl">⚡</span>
@@ -184,8 +187,8 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
             <div className="text-xs text-gray-400 mt-0.5">월~금에는 20분 이내 간편 메뉴를 우선 추천합니다</div>
           </div>
         </div>
-        <div className={`w-10 h-6 rounded-full transition-all flex-shrink-0 ${preferQuick ? 'bg-sky-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 transition-all ${preferQuick ? 'translate-x-4.5 ml-5' : 'ml-0.5'}`} />
+        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${preferQuick ? 'bg-sky-500' : 'bg-gray-200'}`}>
+          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${preferQuick ? 'translate-x-4' : 'translate-x-0'}`} />
         </div>
       </button>
 

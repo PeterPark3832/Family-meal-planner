@@ -4,7 +4,7 @@ import { MEAL_NUTRITION, MEAL_SEASONS, MEAL_PREP_TIME } from '../data/nutrition.
 import { CURRENT_SEASON } from '../data/config.js';
 import { getPrep } from './helpers.js';
 
-const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = [], ratings = {}, allergens = []) => {
+export const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = [], ratings = {}, allergens = []) => {
   const all = [...MEALS, ...customMeals];
   return all.filter(m =>
     (m.isUserCustom || cuisines.includes(m.cuisine)) &&
@@ -16,7 +16,7 @@ const getPool = (mealType, cuisines, minAge, noSpicy = false, customMeals = [], 
   );
 };
 
-const shuffle = (arr) => {
+export const shuffle = (arr) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

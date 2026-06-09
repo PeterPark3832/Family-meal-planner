@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CUISINE_INFO } from '../data/config.js';
 
 export default function RecipeModal({ mealName, cuisine, onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const q = encodeURIComponent(mealName);
   const links = [
     {

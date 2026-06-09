@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MEAL_TYPES } from '../data/config.js';
 
 export default function CustomMealsModal({ customMeals, onAdd, onDelete, onClose }) {
@@ -6,6 +6,12 @@ export default function CustomMealsModal({ customMeals, onAdd, onDelete, onClose
   const [types, setTypes]   = useState(['lunch','dinner']);
   const [minAge, setMinAge] = useState(0);
   const [spicy, setSpicy]   = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const toggleType = (t) => setTypes(prev =>
     prev.includes(t) ? (prev.length > 1 ? prev.filter(x => x !== t) : prev) : [...prev, t]
@@ -47,7 +53,7 @@ export default function CustomMealsModal({ customMeals, onAdd, onDelete, onClose
             <input type="text" value={name} onChange={e => setName(e.target.value)}
               onKeyDown={e => { if(e.key==='Enter' && name.trim()) handleAdd(); }}
               placeholder="예) 엄마표 불고기, 특제 된장찌개..."
-              autoFocus={window.innerWidth > 640}
+              autoFocus={false}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 mb-3" />
             <div className="flex gap-2 mb-3">
               {MEAL_TYPES.map(mt => (
