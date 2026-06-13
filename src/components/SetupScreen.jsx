@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import {
+  Check, ChevronLeft, ChevronRight, Sparkles, HelpCircle,
+  AlertTriangle, Flame, Zap, Leaf, Sun, Snowflake, Wind,
+  PenLine, UtensilsCrossed, Users,
+} from 'lucide-react';
 import { CUISINE_INFO, CURRENT_SEASON, MEAL_TYPES } from '../data/config.js';
 import { MEAL_ALLERGENS } from '../data/ingredients.js';
 import RestorePrompt from './RestorePrompt.jsx';
@@ -13,29 +18,36 @@ const ALLERGEN_INFO = {
   nuts:      { label:'견과류',         emoji:'🥜' },
 };
 
+const SEASON_ICONS = {
+  '봄': <Wind size={18} />,
+  '여름': <Sun size={18} />,
+  '가을': <Leaf size={18} />,
+  '겨울': <Snowflake size={18} />,
+};
+
 function Toggle({ on, onChange, color = 'orange' }) {
-  const colors = {
-    rose:   { track: on ? 'bg-rose-500'  : 'bg-stone-200' },
-    green:  { track: on ? 'bg-green-500' : 'bg-stone-200' },
-    sky:    { track: on ? 'bg-sky-500'   : 'bg-stone-200' },
-    orange: { track: on ? 'bg-orange-600': 'bg-stone-200' },
+  const tracks = {
+    rose: on ? 'bg-rose-500' : 'bg-stone-200',
+    green: on ? 'bg-green-500' : 'bg-stone-200',
+    sky: on ? 'bg-sky-500' : 'bg-stone-200',
+    orange: on ? 'bg-orange-600' : 'bg-stone-200',
   };
   return (
     <button onClick={onChange} role="switch" aria-checked={on}
-      className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${colors[color].track}`}>
+      className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${tracks[color]}`}>
       <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   );
 }
 
-function OptionRow({ emoji, title, desc, on, onChange, color }) {
+function OptionRow({ icon, title, desc, on, onChange, color }) {
   return (
     <button onClick={onChange} role="switch" aria-checked={on}
       className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
         on ? 'border-stone-200 bg-stone-50' : 'border-stone-100 bg-white hover:border-stone-200'
       }`}>
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-xl flex-shrink-0">{emoji}</span>
+        <span className={`flex-shrink-0 ${on ? 'text-stone-700' : 'text-stone-400'}`}>{icon}</span>
         <div className="min-w-0">
           <div className="font-semibold text-sm text-stone-800 leading-tight">{title}</div>
           <div className="text-xs text-stone-400 mt-0.5 leading-tight">{desc}</div>
@@ -84,10 +96,9 @@ function StepFamily({ members, setMembers }) {
       <div className="space-y-2">
         {members.map((m, i) => (
           <div key={i} className="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-100">
-            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-base flex-shrink-0">
-              {m.type==='child' ? '🧒' : m.gender==='male' ? '👨' : '👩'}
+            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <Users size={16} className="text-orange-500" />
             </div>
-            {/* 3열 고정 — 줄바뀜 방지 */}
             <div className="grid grid-cols-3 gap-2 flex-1 min-w-0">
               <select value={m.type} onChange={e => update(i,'type',e.target.value)}
                 className="border border-stone-200 rounded-xl px-2 py-2 text-sm bg-white focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all">
@@ -143,7 +154,9 @@ function StepPeriod({ period, setPeriod, custom, setCustom }) {
         className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
           custom!=='' ? 'border-orange-600 bg-orange-50' : 'border-stone-100 hover:border-stone-200 bg-white'
         }`}>
-        <div className={`font-semibold text-sm mb-3 ${custom!=='' ? 'text-orange-700' : 'text-stone-600'}`}>✏️ 직접 입력</div>
+        <div className={`flex items-center gap-1.5 font-semibold text-sm mb-3 ${custom!=='' ? 'text-orange-700' : 'text-stone-600'}`}>
+          <PenLine size={14} /> 직접 입력
+        </div>
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
           <input type="number" value={custom}
             onChange={e => { setCustom(e.target.value); setPeriod(parseInt(e.target.value)||7); }}
@@ -169,7 +182,6 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
     { key:'chinese',  icon:'🥢', desc:'짜장면, 탕수육, 볶음밥' },
     { key:'japanese', icon:'🍱', desc:'우동, 돈카츠, 오야코동' },
   ];
-  const seasonEmojis = { '봄':'🌸', '여름':'🌻', '가을':'🍂', '겨울':'❄️' };
 
   return (
     <div className="fade-in">
@@ -183,10 +195,12 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
           return (
             <button key={key} onClick={() => toggle(key)}
               className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
-                on ? `border-orange-600 bg-orange-50 shadow-sm` : 'border-stone-100 bg-white hover:border-stone-200'
+                on ? 'border-orange-600 bg-orange-50 shadow-sm' : 'border-stone-100 bg-white hover:border-stone-200'
               }`}>
               {on && (
-                <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">✓</div>
+                <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white">
+                  <Check size={11} strokeWidth={3} />
+                </div>
               )}
               <div className="text-3xl mb-2">{icon}</div>
               <div className={`font-bold text-sm ${on ? 'text-orange-700' : 'text-stone-700'}`}>{info.label}</div>
@@ -197,16 +211,25 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
       </div>
 
       <div className="space-y-2.5">
-        <OptionRow emoji="🌶️" title="매운 음식 제외" desc="제육볶음, 김치찌개, 짬뽕 등 🌶️ 음식을 제외합니다"
+        <OptionRow
+          icon={<Flame size={18} />}
+          title="매운 음식 제외"
+          desc="제육볶음, 김치찌개, 짬뽕 등 매운 음식을 제외합니다"
           on={noSpicy} onChange={() => setNoSpicy(v => !v)} color="rose" />
-        <OptionRow emoji={seasonEmojis[CURRENT_SEASON]} title={`${CURRENT_SEASON} 제철 메뉴 우선`} desc="현재 계절에 어울리는 메뉴를 더 자주 추천합니다"
+        <OptionRow
+          icon={SEASON_ICONS[CURRENT_SEASON] || <Sun size={18} />}
+          title={`${CURRENT_SEASON} 제철 메뉴 우선`}
+          desc="현재 계절에 어울리는 메뉴를 더 자주 추천합니다"
           on={seasonBoost} onChange={() => setSeasonBoost(v => !v)} color="green" />
-        <OptionRow emoji="⚡" title="주중 빠른 조리 우선" desc="월~금 20분 이내 간편 메뉴를 우선 추천합니다"
+        <OptionRow
+          icon={<Zap size={18} />}
+          title="주중 빠른 조리 우선"
+          desc="월~금 20분 이내 간편 메뉴를 우선 추천합니다"
           on={preferQuick} onChange={() => setPreferQuick(v => !v)} color="sky" />
 
         <div className="p-4 rounded-2xl border-2 border-stone-100 bg-white">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">⚠️</span>
+            <AlertTriangle size={17} className="text-amber-500 flex-shrink-0" />
             <div>
               <div className="font-semibold text-sm text-stone-800">알레르기 제외</div>
               <div className="text-xs text-stone-400 mt-0.5">해당 재료가 포함된 메뉴를 추천에서 제외합니다</div>
@@ -221,14 +244,15 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
                     on ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
                   }`}>
                   <span>{emoji}</span>{label}
-                  {on && <span className="text-amber-500 font-bold">✓</span>}
+                  {on && <Check size={10} strokeWidth={3} className="text-amber-500" />}
                 </button>
               );
             })}
           </div>
           {allergens.length > 0 && (
-            <p className="text-[10px] text-amber-600 mt-2.5 font-medium">
-              ⚠️ {allergens.map(a => ALLERGEN_INFO[a]?.label).join(', ')} 포함 메뉴가 제외됩니다
+            <p className="flex items-center gap-1 text-[10px] text-amber-600 mt-2.5 font-medium">
+              <AlertTriangle size={11} />
+              {allergens.map(a => ALLERGEN_INFO[a]?.label).join(', ')} 포함 메뉴가 제외됩니다
             </p>
           )}
         </div>
@@ -238,16 +262,16 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
 }
 
 export default function SetupScreen({ onComplete, restore, onHelp }) {
-  const [step, setStep]         = useState(1);
-  const [members, setMembers]   = useState([
+  const [step, setStep]           = useState(1);
+  const [members, setMembers]     = useState([
     { type:'adult', gender:'male',   age:35 },
     { type:'adult', gender:'female', age:33 },
   ]);
-  const [period, setPeriod]     = useState(7);
-  const [custom, setCustom]     = useState('');
+  const [period, setPeriod]       = useState(7);
+  const [custom, setCustom]       = useState('');
   const [cuisines, setCuisines]   = useState(['korean']);
   const [noSpicy, setNoSpicy]     = useState(false);
-  const [allergens, setAllergens]   = useState([]);
+  const [allergens, setAllergens] = useState([]);
   const [seasonBoost, setSeasonBoost] = useState(false);
   const [preferQuick, setPreferQuick] = useState(false);
   const [restoreData, setRestoreData] = useState(restore || null);
@@ -268,18 +292,19 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
       {/* 헤더 */}
       <div className="text-center mb-8 relative">
         <button onClick={onHelp}
-          className="absolute top-0 right-0 h-8 w-8 rounded-xl border border-stone-200 bg-white text-stone-400 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all shadow-sm flex items-center justify-center"
-          title="사용 가이드">?</button>
+          className="absolute top-0 right-0 h-8 w-8 rounded-xl border border-stone-200 bg-white text-stone-400 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all shadow-sm flex items-center justify-center"
+          title="사용 가이드">
+          <HelpCircle size={16} />
+        </button>
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-200 select-none">
-          <span className="text-3xl">🍽️</span>
+          <UtensilsCrossed size={28} className="text-white" strokeWidth={1.75} />
         </div>
         <h1 className="text-2xl font-black text-stone-900 tracking-tight">우리 가족 식단 플래너</h1>
         <p className="text-stone-400 mt-1.5 text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
       </div>
 
-      {/* 스텝 인디케이터 — 두 줄 구조로 정렬 문제 해결 */}
+      {/* 스텝 인디케이터 */}
       <div className="mb-7">
-        {/* 1행: 원 + 커넥터 */}
         <div className="flex items-center justify-center">
           {stepLabels.map((_, i) => {
             const s = i + 1;
@@ -288,11 +313,11 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
             return (
               <React.Fragment key={s}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all flex-shrink-0 ${
-                  done ? 'bg-green-500 text-white shadow-sm' :
+                  done   ? 'bg-green-500 text-white shadow-sm' :
                   active ? 'bg-orange-600 text-white shadow-md shadow-orange-200' :
-                  'bg-stone-200 text-stone-400'
+                           'bg-stone-200 text-stone-400'
                 }`}>
-                  {done ? '✓' : s}
+                  {done ? <Check size={13} strokeWidth={3} /> : s}
                 </div>
                 {i < 2 && (
                   <div className={`w-14 sm:w-20 h-0.5 flex-shrink-0 transition-all ${done ? 'bg-green-400' : 'bg-stone-200'}`} />
@@ -301,7 +326,6 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
             );
           })}
         </div>
-        {/* 2행: 라벨 */}
         <div className="flex justify-between mt-1.5" style={{paddingLeft:'0.25rem', paddingRight:'0.25rem'}}>
           {stepLabels.map((lbl, i) => (
             <span key={i} className={`text-[10px] font-semibold flex-1 text-center ${i+1===step ? 'text-orange-600' : 'text-stone-400'}`}>{lbl}</span>
@@ -323,21 +347,20 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
           />
         )}
 
-        {/* 하단 버튼 */}
         <div className="flex justify-between mt-7 pt-5 border-t border-stone-100">
           <button onClick={() => setStep(s => s-1)} disabled={step===1}
-            className="h-10 px-5 rounded-xl border border-stone-200 text-stone-600 font-medium text-sm disabled:opacity-30 hover:bg-stone-50 transition-all">
-            ← 이전
+            className="h-10 px-5 rounded-xl border border-stone-200 text-stone-600 font-medium text-sm disabled:opacity-30 hover:bg-stone-50 transition-all flex items-center gap-1.5">
+            <ChevronLeft size={15} /> 이전
           </button>
           {step < 3 ? (
             <button onClick={() => setStep(s => s+1)}
-              className="h-10 px-6 rounded-xl bg-orange-600 text-white font-bold text-sm hover:bg-orange-700 transition-all shadow-md shadow-orange-200">
-              다음 →
+              className="h-10 px-6 rounded-xl bg-orange-600 text-white font-bold text-sm hover:bg-orange-700 transition-all shadow-md shadow-orange-200 flex items-center gap-1.5">
+              다음 <ChevronRight size={15} />
             </button>
           ) : (
             <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens, seasonBoost, preferQuick })}
-              className="h-10 px-6 rounded-xl bg-gradient-to-r from-orange-600 to-rose-500 text-white font-bold text-sm hover:from-orange-700 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
-              식단 생성 🎉
+              className="h-10 px-6 rounded-xl bg-gradient-to-r from-orange-600 to-rose-500 text-white font-bold text-sm hover:from-orange-700 hover:to-rose-600 transition-all shadow-md shadow-orange-200 flex items-center gap-1.5">
+              식단 생성 <Sparkles size={15} />
             </button>
           )}
         </div>

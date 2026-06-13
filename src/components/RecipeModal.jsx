@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { X, BookOpen, Search, Clock, Users, Play, ExternalLink } from 'lucide-react';
 import { CUISINE_INFO } from '../data/config.js';
 import { RECIPES } from '../data/recipes.js';
 
@@ -65,20 +66,20 @@ export default function RecipeModal({ mealName, cuisine, onClose }) {
                 <p className="text-xs text-gray-400">{info?.label || ''}</p>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 text-lg">✕</button>
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 text-stone-400 transition-colors"><X size={16} strokeWidth={2} /></button>
           </div>
 
           {/* 탭 */}
           <div className="flex gap-2 mt-3">
             {recipe && (
               <button onClick={() => setTab('recipe')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === 'recipe' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                📋 레시피
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === 'recipe' ? 'bg-orange-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
+                <BookOpen size={12} /> 레시피
               </button>
             )}
             <button onClick={() => setTab('search')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === 'search' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-              🔍 검색
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === 'search' ? 'bg-orange-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
+              <Search size={12} /> 검색
             </button>
           </div>
         </div>
@@ -88,11 +89,11 @@ export default function RecipeModal({ mealName, cuisine, onClose }) {
           <div className="overflow-y-auto" style={{maxHeight:'65vh'}}>
             {/* 기본 정보 */}
             <div className="flex gap-3 px-5 pt-4 pb-2">
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-orange-50 px-2.5 py-1 rounded-full">
-                <span>⏱</span><span>{recipe.time}</span>
+              <div className="flex items-center gap-1.5 text-xs text-stone-500 bg-orange-50 px-2.5 py-1 rounded-full">
+                <Clock size={12} className="text-orange-400" /><span>{recipe.time}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-blue-50 px-2.5 py-1 rounded-full">
-                <span>👥</span><span>{recipe.serves}</span>
+              <div className="flex items-center gap-1.5 text-xs text-stone-500 bg-blue-50 px-2.5 py-1 rounded-full">
+                <Users size={12} className="text-blue-400" /><span>{recipe.serves}</span>
               </div>
             </div>
 
@@ -123,7 +124,7 @@ export default function RecipeModal({ mealName, cuisine, onClose }) {
             <div className="px-5 pb-4 border-t border-gray-100 pt-3">
               <a href={`https://www.youtube.com/results?search_query=${q}+만들기`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-bold hover:bg-red-100 transition-all">
-                ▶️ 영상으로 보기
+                <Play size={14} fill="currentColor" /> 영상으로 보기
               </a>
             </div>
           </div>
@@ -140,7 +141,7 @@ export default function RecipeModal({ mealName, cuisine, onClose }) {
                   <div className="font-bold text-sm">{l.name}</div>
                   <div className="text-xs opacity-70">{l.desc}</div>
                 </div>
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${l.badge}`}>열기 →</span>
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${l.badge}`}><ExternalLink size={10} />열기</span>
               </a>
             ))}
             <p className="text-center text-[10px] text-gray-300 pt-1">새 탭에서 열립니다</p>

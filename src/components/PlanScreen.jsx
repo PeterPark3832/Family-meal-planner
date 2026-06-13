@@ -1,4 +1,10 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import {
+  BarChart2, Star, ShoppingCart, ClipboardList, RotateCw, FileText,
+  Image as ImageIcon, Download, FolderOpen, CalendarDays, Printer,
+  Share2, MessageCircle, Link2, HelpCircle, MoreHorizontal, ChevronLeft,
+  Copy, Sunrise, Sun, Moon,
+} from 'lucide-react';
 import { CUISINE_INFO, MEAL_TYPES, WEEK_DAYS, NUTRITION_INFO, IS_TOUCH } from '../data/config.js';
 import { getMinAge, hasKids, getDayNutrition, formatTime, trackEvent } from '../utils/helpers.js';
 import { pickOneMeal } from '../utils/algorithm.js';
@@ -230,7 +236,7 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       {/* ── 툴바 — 줄바뀜 없음, h-9 통일 ─────────── */}
       <div className="flex items-center gap-2 mb-5 no-print">
         {/* 왼쪽: 뒤로 + 제목 */}
-        <button onClick={onBack} className="tbtn tbtn-default border">← 설정</button>
+        <button onClick={onBack} className="tbtn tbtn-default border"><ChevronLeft size={14} /> 설정</button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold text-stone-800 leading-tight">우리 가족 식단표</h1>
           <p className="text-xs text-stone-400 leading-tight truncate">
@@ -242,49 +248,49 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
         {/* 오른쪽 — 데스크탑: 전체 표시 */}
         <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
           <button onClick={() => setShowStats(s => !s)}
-            className={`tbtn ${showStats ? 'tbtn-active-indigo' : 'tbtn-default border'}`}>📊 통계</button>
+            className={`tbtn ${showStats ? 'tbtn-active-indigo' : 'tbtn-default border'}`}><BarChart2 size={14} /> 통계</button>
           <button onClick={() => setShowCustomDB(true)}
             className={`tbtn ${customMeals.length > 0 ? 'tbtn-active-amber' : 'tbtn-default border'}`}>
-            ⭐{customMeals.length > 0 ? ` 내 메뉴 (${customMeals.length})` : ' 내 메뉴'}
+            <Star size={14} />{customMeals.length > 0 ? ` 내 메뉴 (${customMeals.length})` : ' 내 메뉴'}
           </button>
           <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }}
-            className="tbtn tbtn-default border">🛒 장보기</button>
+            className="tbtn tbtn-default border"><ShoppingCart size={14} /> 장보기</button>
           <button onClick={() => setShowTemplate(true)}
             className={`tbtn ${templates.length > 0 ? 'tbtn-active-violet' : 'tbtn-default border'}`}>
-            📋 템플릿{templates.length > 0 ? ` (${templates.length})` : ''}
+            <ClipboardList size={14} /> 템플릿{templates.length > 0 ? ` (${templates.length})` : ''}
           </button>
           <div className="w-px h-5 bg-stone-200" />
-          <button onClick={onRegen} className="tbtn tbtn-default border">🔄 재생성</button>
-          <button onClick={exportText} className="tbtn tbtn-default border">📄 복사</button>
+          <button onClick={onRegen} className="tbtn tbtn-default border"><RotateCw size={14} /> 재생성</button>
+          <button onClick={exportText} className="tbtn tbtn-default border"><FileText size={14} /> 복사</button>
           <button onClick={() => shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO)}
-            className="tbtn tbtn-default border">🖼️</button>
+            className="tbtn-icon tbtn-default border" title="이미지 공유"><ImageIcon size={14} /></button>
           <div className="w-px h-5 bg-stone-200" />
-          <button onClick={exportJSON} className="tbtn-icon tbtn-default border" title="JSON 백업">💾</button>
-          <button onClick={() => fileInputRef.current?.click()} className="tbtn-icon tbtn-default border" title="백업 불러오기">📂</button>
-          <button onClick={() => exportToCalendar(mealPlan, config, children, MEAL_TYPES)} className="tbtn-icon tbtn-default border" title="캘린더">📅</button>
+          <button onClick={exportJSON} className="tbtn-icon tbtn-default border" title="JSON 백업"><Download size={14} /></button>
+          <button onClick={() => fileInputRef.current?.click()} className="tbtn-icon tbtn-default border" title="백업 불러오기"><FolderOpen size={14} /></button>
+          <button onClick={() => exportToCalendar(mealPlan, config, children, MEAL_TYPES)} className="tbtn-icon tbtn-default border" title="캘린더"><CalendarDays size={14} /></button>
           <button onClick={() => window.print()}
-            className="tbtn border border-stone-700 bg-stone-800 text-white hover:bg-stone-700">🖨️ 인쇄</button>
+            className="tbtn border border-stone-700 bg-stone-800 text-white hover:bg-stone-700"><Printer size={14} /> 인쇄</button>
           <div className="w-px h-5 bg-stone-200" />
-          <button onClick={sharePlan} className="tbtn tbtn-primary">📤 공유</button>
+          <button onClick={sharePlan} className="tbtn tbtn-primary"><Share2 size={14} /> 공유</button>
           {typeof window !== 'undefined' && window.Kakao?.isInitialized?.() && (
-            <button onClick={shareKakao} className="tbtn border border-yellow-300 bg-yellow-400 text-stone-900 font-semibold hover:bg-yellow-500">💬 카카오</button>
+            <button onClick={shareKakao} className="tbtn border border-yellow-300 bg-yellow-400 text-stone-900 font-semibold hover:bg-yellow-500"><MessageCircle size={14} /> 카카오</button>
           )}
-          <button onClick={onHelp} className="tbtn-icon tbtn-default border font-bold text-sm">?</button>
+          <button onClick={onHelp} className="tbtn-icon tbtn-default border"><HelpCircle size={15} /></button>
         </div>
 
         {/* 오른쪽 — 모바일/태블릿: 핵심만 + 더보기 */}
         <div className="flex lg:hidden items-center gap-1.5 flex-shrink-0">
           <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }}
-            className="tbtn-icon tbtn-default border" title="장보기">🛒</button>
+            className="tbtn-icon tbtn-default border" title="장보기"><ShoppingCart size={16} /></button>
           <button onClick={sharePlan} className="tbtn tbtn-primary">
-            📤<span className="hidden sm:inline ml-1">공유</span>
+            <Share2 size={14} /><span className="hidden sm:inline ml-1">공유</span>
           </button>
-          <button onClick={onRegen} className="tbtn-icon tbtn-default border" title="재생성">🔄</button>
+          <button onClick={onRegen} className="tbtn-icon tbtn-default border" title="재생성"><RotateCw size={15} /></button>
           {/* 더보기 드롭다운 */}
           <div className="relative">
             <button onClick={() => setShowMore(s => !s)}
-              className={`tbtn-icon border font-bold text-base leading-none ${showMore ? 'bg-stone-100 border-stone-300 text-stone-700' : 'tbtn-default border'}`}>
-              ···
+              className={`tbtn-icon border ${showMore ? 'bg-stone-100 border-stone-300 text-stone-700' : 'tbtn-default border'}`}>
+              <MoreHorizontal size={16} />
             </button>
             {showMore && (
               <>
@@ -292,37 +298,37 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
                 <div className="absolute right-0 top-11 bg-white rounded-2xl card-shadow-md border border-stone-100 py-1.5 w-52 z-40 fade-in">
                   <button onClick={() => { setShowStats(s => !s); setShowMore(false); }}
                     className={`dditem ${showStats ? 'text-indigo-700 font-medium' : ''}`}>
-                    📊 <span>통계 {showStats ? '(닫기)' : ''}</span>
+                    <BarChart2 size={15} /> <span>통계 {showStats ? '(닫기)' : ''}</span>
                   </button>
                   <button onClick={() => { setShowCustomDB(true); setShowMore(false); }} className="dditem">
-                    ⭐ <span>내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
+                    <Star size={15} /> <span>내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
                   </button>
                   <button onClick={() => { setShowTemplate(true); setShowMore(false); }} className="dditem">
-                    📋 <span>템플릿{templates.length > 0 ? ` (${templates.length})` : ''}</span>
+                    <ClipboardList size={15} /> <span>템플릿{templates.length > 0 ? ` (${templates.length})` : ''}</span>
                   </button>
                   <div className="h-px bg-stone-100 my-1" />
                   <button onClick={() => { exportText(); setShowMore(false); }} className="dditem">
-                    📄 <span>텍스트 복사</span>
+                    <FileText size={15} /> <span>텍스트 복사</span>
                   </button>
                   <button onClick={() => { shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO); setShowMore(false); }} className="dditem">
-                    🖼️ <span>이미지 공유</span>
+                    <ImageIcon size={15} /> <span>이미지 공유</span>
                   </button>
                   <div className="h-px bg-stone-100 my-1" />
                   <button onClick={() => { exportJSON(); setShowMore(false); }} className="dditem">
-                    💾 <span>JSON 백업</span>
+                    <Download size={15} /> <span>JSON 백업</span>
                   </button>
                   <button onClick={() => { fileInputRef.current?.click(); setShowMore(false); }} className="dditem">
-                    📂 <span>백업 불러오기</span>
+                    <FolderOpen size={15} /> <span>백업 불러오기</span>
                   </button>
                   <button onClick={() => { exportToCalendar(mealPlan, config, children, MEAL_TYPES); setShowMore(false); }} className="dditem">
-                    📅 <span>캘린더 내보내기</span>
+                    <CalendarDays size={15} /> <span>캘린더 내보내기</span>
                   </button>
                   <button onClick={() => { window.print(); setShowMore(false); }} className="dditem">
-                    🖨️ <span>인쇄</span>
+                    <Printer size={15} /> <span>인쇄</span>
                   </button>
                   <div className="h-px bg-stone-100 my-1" />
-                  <button onClick={() => { shareApp(); setShowMore(false); }} className="dditem">🔗 <span>앱 공유하기</span></button>
-                  <button onClick={() => { onHelp(); setShowMore(false); }} className="dditem">❓ <span>사용 가이드</span></button>
+                  <button onClick={() => { shareApp(); setShowMore(false); }} className="dditem"><Link2 size={15} /> <span>앱 공유하기</span></button>
+                  <button onClick={() => { onHelp(); setShowMore(false); }} className="dditem"><HelpCircle size={15} /> <span>사용 가이드</span></button>
                 </div>
               </>
             )}
@@ -364,8 +370,8 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
               ))}
               {week < totalWeeks - 1 && (
                 <button onClick={copyWeekToNext} title="이번 주 식단을 다음 주로 복사"
-                  className="ml-auto flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-500 hover:bg-orange-50 hover:border-orange-300 transition-all">
-                  📋 다음 주로 복사
+                  className="ml-auto flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border border-gray-200 text-gray-500 hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center gap-1.5">
+                  <Copy size={12} /> 다음 주로 복사
                 </button>
               )}
             </div>
@@ -400,7 +406,9 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
                 {MEAL_TYPES.map(mt => (
                   <React.Fragment key={mt.id}>
                     <div className="p-2.5 flex flex-col items-center justify-center border-b border-r border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                      <span className="text-xl">{mt.emoji}</span>
+                      <span className="text-stone-400">
+                        {mt.id==='breakfast' ? <Sunrise size={18} strokeWidth={1.5} /> : mt.id==='lunch' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
+                      </span>
                       <span className="text-[10px] font-bold text-gray-500 mt-0.5">{mt.label}</span>
                     </div>
                     {Array.from({length:daysInWeek}, (_,i) => {
@@ -436,8 +444,8 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
                 {CUISINE_INFO[c].emoji} {CUISINE_INFO[c].label}
               </span>
             ))}
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">✏️ 직접입력</span>
-            <span className="text-xs text-gray-400 ml-auto">🎲 셀 호버 시 개별 재생성 · 클릭 시 메뉴 변경</span>
+            <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200"><FileText size={11} /> 직접입력</span>
+            <span className="text-xs text-gray-400 ml-auto">셀 호버 시 개별 재생성 · 클릭 시 메뉴 변경</span>
           </div>
         </>
       )}

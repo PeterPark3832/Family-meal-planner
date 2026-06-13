@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Smartphone } from 'lucide-react';
 import { SAVE_KEY, CUSTOM_KEY, RATING_KEY, TEMPLATE_KEY } from './data/config.js';
 import { generatePlan, pickOneMeal } from './utils/algorithm.js';
 import { getMinAge, hasKids, trackEvent } from './utils/helpers.js';
@@ -202,7 +203,7 @@ export default function App() {
         <div className="install-banner fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 shadow-xl z-50 fade-in">
           <div className="max-w-xl mx-auto flex items-center justify-between gap-3 px-4 pt-3 pb-3">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-2xl flex-shrink-0">📱</span>
+              <span className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0"><Smartphone size={20} className="text-orange-500" strokeWidth={1.75} /></span>
               <div className="min-w-0">
                 <div className="font-bold text-gray-800 text-sm">홈 화면에 추가하기</div>
                 <div className="text-xs text-gray-500 truncate">앱처럼 빠르게 실행할 수 있어요</div>
