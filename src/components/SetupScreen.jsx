@@ -4,14 +4,47 @@ import { MEAL_ALLERGENS } from '../data/ingredients.js';
 import RestorePrompt from './RestorePrompt.jsx';
 
 const ALLERGEN_INFO = {
-  egg:       { label:'달걀',      emoji:'🥚' },
-  dairy:     { label:'유제품',    emoji:'🥛' },
-  gluten:    { label:'밀/글루텐', emoji:'🌾' },
-  seafood:   { label:'생선',      emoji:'🐟' },
-  shellfish: { label:'갑각류·연체류', emoji:'🦐' },
-  soy:       { label:'콩/두부',   emoji:'🫘' },
-  nuts:      { label:'견과류',    emoji:'🥜' },
+  egg:       { label:'달걀',          emoji:'🥚' },
+  dairy:     { label:'유제품',         emoji:'🥛' },
+  gluten:    { label:'밀/글루텐',      emoji:'🌾' },
+  seafood:   { label:'생선',           emoji:'🐟' },
+  shellfish: { label:'갑각류·연체류',   emoji:'🦐' },
+  soy:       { label:'콩/두부',        emoji:'🫘' },
+  nuts:      { label:'견과류',         emoji:'🥜' },
 };
+
+function Toggle({ on, onChange, color = 'orange' }) {
+  const colors = {
+    rose:   { track: on ? 'bg-rose-500'  : 'bg-stone-200' },
+    green:  { track: on ? 'bg-green-500' : 'bg-stone-200' },
+    sky:    { track: on ? 'bg-sky-500'   : 'bg-stone-200' },
+    orange: { track: on ? 'bg-orange-600': 'bg-stone-200' },
+  };
+  return (
+    <button onClick={onChange} role="switch" aria-checked={on}
+      className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 relative ${colors[color].track}`}>
+      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+  );
+}
+
+function OptionRow({ emoji, title, desc, on, onChange, color }) {
+  return (
+    <button onClick={onChange} role="switch" aria-checked={on}
+      className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
+        on ? 'border-stone-200 bg-stone-50' : 'border-stone-100 bg-white hover:border-stone-200'
+      }`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-xl flex-shrink-0">{emoji}</span>
+        <div className="min-w-0">
+          <div className="font-semibold text-sm text-stone-800 leading-tight">{title}</div>
+          <div className="text-xs text-stone-400 mt-0.5 leading-tight">{desc}</div>
+        </div>
+      </div>
+      <Toggle on={on} onChange={e => { e.stopPropagation(); onChange(); }} color={color} />
+    </button>
+  );
+}
 
 function StepFamily({ members, setMembers }) {
   const updateCount = (n) => {
@@ -28,45 +61,50 @@ function StepFamily({ members, setMembers }) {
   };
   return (
     <div className="fade-in">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">가족 구성원 설정</h2>
-      <p className="text-gray-500 text-sm mb-5">함께 식사하는 인원을 알려주세요</p>
+      <h2 className="text-lg font-bold text-stone-900 mb-0.5">가족 구성원 설정</h2>
+      <p className="text-stone-400 text-sm mb-5">함께 식사하는 인원을 알려주세요</p>
+
       <div className="mb-5">
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2.5">인원 수</label>
-        <div className="flex gap-2 flex-wrap">
+        <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">인원 수</label>
+        <div className="flex gap-2">
           {[1,2,3,4,5].map(n => (
             <button key={n} onClick={() => updateCount(n)}
-              className={`w-11 h-11 rounded-xl border-2 font-bold text-sm transition-all ${members.length===n ? 'border-orange-500 bg-orange-500 text-white shadow-md' : 'border-gray-200 text-gray-500 hover:border-orange-300'}`}>
+              className={`w-11 h-11 rounded-xl border-2 font-bold text-sm transition-all ${
+                members.length===n
+                  ? 'border-orange-600 bg-orange-600 text-white shadow-md shadow-orange-200'
+                  : 'border-stone-200 text-stone-500 hover:border-orange-300 bg-white'
+              }`}>
               {n}
             </button>
           ))}
-          <span className="flex items-center text-gray-500 text-sm pl-1">명</span>
+          <span className="flex items-center text-stone-400 text-sm pl-1 font-medium">명</span>
         </div>
       </div>
-      <div className="space-y-2.5">
+
+      <div className="space-y-2">
         {members.map((m, i) => (
-          <div key={i} className="flex items-start gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+          <div key={i} className="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-100">
+            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-base flex-shrink-0">
               {m.type==='child' ? '🧒' : m.gender==='male' ? '👨' : '👩'}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <select value={m.type} onChange={e => update(i,'type',e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400 flex-1 min-w-[72px]">
-                  <option value="adult">성인</option>
-                  <option value="child">자녀</option>
-                </select>
-                <select value={m.gender} onChange={e => update(i,'gender',e.target.value)}
-                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400 flex-1 min-w-[72px]">
-                  <option value="male">남성</option>
-                  <option value="female">여성</option>
-                </select>
-                <div className="flex items-center gap-1">
-                  <input type="number" value={m.age}
-                    onChange={e => update(i,'age',parseInt(e.target.value)||0)}
-                    min={m.type==='child'?1:18} max={99}
-                    className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center bg-white focus:outline-none focus:border-orange-400" />
-                  <span className="text-gray-500 text-sm">세</span>
-                </div>
+            {/* 3열 고정 — 줄바뀜 방지 */}
+            <div className="grid grid-cols-3 gap-2 flex-1 min-w-0">
+              <select value={m.type} onChange={e => update(i,'type',e.target.value)}
+                className="border border-stone-200 rounded-xl px-2 py-2 text-sm bg-white focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all">
+                <option value="adult">성인</option>
+                <option value="child">자녀</option>
+              </select>
+              <select value={m.gender} onChange={e => update(i,'gender',e.target.value)}
+                className="border border-stone-200 rounded-xl px-2 py-2 text-sm bg-white focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all">
+                <option value="male">남성</option>
+                <option value="female">여성</option>
+              </select>
+              <div className="flex items-center gap-1">
+                <input type="number" value={m.age}
+                  onChange={e => update(i,'age',parseInt(e.target.value)||0)}
+                  min={m.type==='child'?1:18} max={99}
+                  className="w-full border border-stone-200 rounded-xl px-2 py-2 text-sm text-center bg-white focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
+                <span className="text-stone-400 text-sm flex-shrink-0">세</span>
               </div>
             </div>
           </div>
@@ -85,26 +123,33 @@ function StepPeriod({ period, setPeriod, custom, setCustom }) {
   ];
   return (
     <div className="fade-in">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">식단 기간 선택</h2>
-      <p className="text-gray-500 text-sm mb-5">얼마나 계획하실 건가요?</p>
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        {opts.map(o => (
-          <button key={o.val} onClick={() => { setPeriod(o.val); setCustom(''); }}
-            className={`p-4 rounded-xl border-2 text-left transition-all ${period===o.val && custom==='' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-            <div className={`font-bold text-lg ${period===o.val && custom==='' ? 'text-orange-600' : 'text-gray-700'}`}>{o.label}</div>
-            <div className="text-gray-400 text-xs mt-0.5">{o.sub}</div>
-          </button>
-        ))}
+      <h2 className="text-lg font-bold text-stone-900 mb-0.5">식단 기간 선택</h2>
+      <p className="text-stone-400 text-sm mb-5">얼마나 계획하실 건가요?</p>
+      <div className="grid grid-cols-2 gap-2.5 mb-2.5">
+        {opts.map(o => {
+          const on = period===o.val && custom==='';
+          return (
+            <button key={o.val} onClick={() => { setPeriod(o.val); setCustom(''); }}
+              className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                on ? 'border-orange-600 bg-orange-50' : 'border-stone-100 hover:border-stone-200 bg-white'
+              }`}>
+              <div className={`font-bold text-lg leading-tight ${on ? 'text-orange-700' : 'text-stone-700'}`}>{o.label}</div>
+              <div className={`text-xs mt-0.5 ${on ? 'text-orange-400' : 'text-stone-400'}`}>{o.sub}</div>
+            </button>
+          );
+        })}
       </div>
       <div onClick={() => setCustom(p => p==='' ? '10' : p)}
-        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${custom!=='' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-        <div className={`font-bold mb-2 ${custom!=='' ? 'text-orange-600' : 'text-gray-700'}`}>✏️ 직접 입력</div>
+        className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+          custom!=='' ? 'border-orange-600 bg-orange-50' : 'border-stone-100 hover:border-stone-200 bg-white'
+        }`}>
+        <div className={`font-semibold text-sm mb-3 ${custom!=='' ? 'text-orange-700' : 'text-stone-600'}`}>✏️ 직접 입력</div>
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
           <input type="number" value={custom}
             onChange={e => { setCustom(e.target.value); setPeriod(parseInt(e.target.value)||7); }}
             placeholder="일 수 입력" min="1" max="90"
-            className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-orange-400" />
-          <span className="text-gray-500 text-sm">일</span>
+            className="w-28 border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
+          <span className="text-stone-400 text-sm">일</span>
         </div>
       </div>
     </div>
@@ -119,106 +164,74 @@ function StepCuisine({ cuisines, setCuisines, noSpicy, setNoSpicy, allergens, se
     prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
   );
   const items = [
-    { key:'korean',   icon:'🍚', desc:'김치찌개, 불고기, 된장찌개...' },
-    { key:'western',  icon:'🍝', desc:'파스타, 피자, 오므라이스...'   },
-    { key:'chinese',  icon:'🥢', desc:'짜장면, 탕수육, 볶음밥...'    },
-    { key:'japanese', icon:'🍱', desc:'우동, 돈카츠, 오야코동...'     },
+    { key:'korean',   icon:'🍚', desc:'김치찌개, 불고기, 된장찌개' },
+    { key:'western',  icon:'🍝', desc:'파스타, 카레, 오므라이스' },
+    { key:'chinese',  icon:'🥢', desc:'짜장면, 탕수육, 볶음밥' },
+    { key:'japanese', icon:'🍱', desc:'우동, 돈카츠, 오야코동' },
   ];
   const seasonEmojis = { '봄':'🌸', '여름':'🌻', '가을':'🍂', '겨울':'❄️' };
+
   return (
     <div className="fade-in">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">요리 종류 선택</h2>
-      <p className="text-gray-500 text-sm mb-5">선호하는 요리를 선택하세요 <span className="text-orange-500 font-medium">(중복 선택 가능)</span></p>
-      <div className="grid grid-cols-2 gap-3">
+      <h2 className="text-lg font-bold text-stone-900 mb-0.5">요리 종류 선택</h2>
+      <p className="text-stone-400 text-sm mb-4">선호하는 요리를 선택하세요 <span className="text-orange-600 font-medium">(중복 가능)</span></p>
+
+      <div className="grid grid-cols-2 gap-2.5 mb-4">
         {items.map(({ key, icon, desc }) => {
           const info = CUISINE_INFO[key];
           const on = cuisines.includes(key);
           return (
             <button key={key} onClick={() => toggle(key)}
-              className={`p-5 rounded-xl border-2 text-left transition-all relative ${on ? `${info.border} ${info.bg} shadow-md` : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-              {on && <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">✓</div>}
+              className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                on ? `border-orange-600 bg-orange-50 shadow-sm` : 'border-stone-100 bg-white hover:border-stone-200'
+              }`}>
+              {on && (
+                <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">✓</div>
+              )}
               <div className="text-3xl mb-2">{icon}</div>
-              <div className={`font-bold ${on ? 'text-gray-800' : 'text-gray-600'}`}>{info.label}</div>
-              <div className="text-gray-400 text-xs mt-1 leading-tight">{desc}</div>
+              <div className={`font-bold text-sm ${on ? 'text-orange-700' : 'text-stone-700'}`}>{info.label}</div>
+              <div className="text-stone-400 text-xs mt-1 leading-tight">{desc}</div>
             </button>
           );
         })}
       </div>
-      <p className="text-xs text-gray-400 mt-4 text-center">* 최소 1개 이상 선택해야 합니다</p>
 
-      <button
-        onClick={() => setNoSpicy(v => !v)}
-        role="switch" aria-checked={noSpicy}
-        className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${noSpicy ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-xl">🌶️</span>
-          <div className="text-left">
-            <div className={`font-bold text-sm ${noSpicy ? 'text-rose-600' : 'text-gray-700'}`}>매운 음식 제외</div>
-            <div className="text-xs text-gray-400 mt-0.5">제육볶음, 김치찌개, 짬뽕 등 🌶️ 음식을 추천에서 뺍니다</div>
-          </div>
-        </div>
-        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${noSpicy ? 'bg-rose-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${noSpicy ? 'translate-x-4' : 'translate-x-0'}`} />
-        </div>
-      </button>
+      <div className="space-y-2.5">
+        <OptionRow emoji="🌶️" title="매운 음식 제외" desc="제육볶음, 김치찌개, 짬뽕 등 🌶️ 음식을 제외합니다"
+          on={noSpicy} onChange={() => setNoSpicy(v => !v)} color="rose" />
+        <OptionRow emoji={seasonEmojis[CURRENT_SEASON]} title={`${CURRENT_SEASON} 제철 메뉴 우선`} desc="현재 계절에 어울리는 메뉴를 더 자주 추천합니다"
+          on={seasonBoost} onChange={() => setSeasonBoost(v => !v)} color="green" />
+        <OptionRow emoji="⚡" title="주중 빠른 조리 우선" desc="월~금 20분 이내 간편 메뉴를 우선 추천합니다"
+          on={preferQuick} onChange={() => setPreferQuick(v => !v)} color="sky" />
 
-      <button
-        onClick={() => setSeasonBoost(v => !v)}
-        role="switch" aria-checked={seasonBoost}
-        className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${seasonBoost ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-xl">{seasonEmojis[CURRENT_SEASON]}</span>
-          <div className="text-left">
-            <div className={`font-bold text-sm ${seasonBoost ? 'text-green-700' : 'text-gray-700'}`}>{CURRENT_SEASON} 제철 메뉴 우선 추천</div>
-            <div className="text-xs text-gray-400 mt-0.5">현재 계절에 어울리는 메뉴를 더 자주 추천합니다</div>
+        <div className="p-4 rounded-2xl border-2 border-stone-100 bg-white">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⚠️</span>
+            <div>
+              <div className="font-semibold text-sm text-stone-800">알레르기 제외</div>
+              <div className="text-xs text-stone-400 mt-0.5">해당 재료가 포함된 메뉴를 추천에서 제외합니다</div>
+            </div>
           </div>
-        </div>
-        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${seasonBoost ? 'bg-green-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${seasonBoost ? 'translate-x-4' : 'translate-x-0'}`} />
-        </div>
-      </button>
-
-      <button
-        onClick={() => setPreferQuick(v => !v)}
-        role="switch" aria-checked={preferQuick}
-        className={`mt-4 w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${preferQuick ? 'border-sky-400 bg-sky-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-        <div className="flex items-center gap-3">
-          <span className="text-xl">⚡</span>
-          <div className="text-left">
-            <div className={`font-bold text-sm ${preferQuick ? 'text-sky-700' : 'text-gray-700'}`}>주중 빠른 조리 우선</div>
-            <div className="text-xs text-gray-400 mt-0.5">월~금에는 20분 이내 간편 메뉴를 우선 추천합니다</div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(ALLERGEN_INFO).map(([key, { label, emoji }]) => {
+              const on = allergens.includes(key);
+              return (
+                <button key={key} onClick={() => toggleAllergen(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                    on ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
+                  }`}>
+                  <span>{emoji}</span>{label}
+                  {on && <span className="text-amber-500 font-bold">✓</span>}
+                </button>
+              );
+            })}
           </div>
+          {allergens.length > 0 && (
+            <p className="text-[10px] text-amber-600 mt-2.5 font-medium">
+              ⚠️ {allergens.map(a => ALLERGEN_INFO[a]?.label).join(', ')} 포함 메뉴가 제외됩니다
+            </p>
+          )}
         </div>
-        <div className={`w-10 h-6 rounded-full transition-colors flex-shrink-0 ${preferQuick ? 'bg-sky-500' : 'bg-gray-200'}`}>
-          <div className={`w-5 h-5 bg-white rounded-full shadow-sm mt-0.5 ml-0.5 transition-transform ${preferQuick ? 'translate-x-4' : 'translate-x-0'}`} />
-        </div>
-      </button>
-
-      <div className="mt-4 p-4 rounded-xl border-2 border-gray-200 bg-white">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">⚠️</span>
-          <div>
-            <div className="font-bold text-sm text-gray-700">알레르기 제외</div>
-            <div className="text-xs text-gray-400 mt-0.5">해당 재료가 포함된 메뉴를 추천에서 제외합니다</div>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(ALLERGEN_INFO).map(([key, { label, emoji }]) => {
-            const on = allergens.includes(key);
-            return (
-              <button key={key} onClick={() => toggleAllergen(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${on ? 'bg-amber-100 border-amber-400 text-amber-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                <span>{emoji}</span>{label}
-                {on && <span className="text-amber-500">✓</span>}
-              </button>
-            );
-          })}
-        </div>
-        {allergens.length > 0 && (
-          <p className="text-[10px] text-amber-600 mt-2">
-            ⚠️ {allergens.map(a => ALLERGEN_INFO[a]?.label).join(', ')} 포함 메뉴가 제외됩니다
-          </p>
-        )}
       </div>
     </div>
   );
@@ -243,7 +256,7 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
   const stepLabels  = ['가족 구성원','식단 기간','요리 종류'];
 
   return (
-    <div className="max-w-xl mx-auto p-4 py-6 sm:py-10">
+    <div className="max-w-lg mx-auto px-4 py-8 sm:py-12">
       {restoreData && (
         <RestorePrompt
           savedAt={restoreData.savedAt}
@@ -252,50 +265,78 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
         />
       )}
 
-      <div className="text-center mb-6 sm:mb-8 relative">
+      {/* 헤더 */}
+      <div className="text-center mb-8 relative">
         <button onClick={onHelp}
-          className="absolute top-0 right-0 w-8 h-8 rounded-full border border-gray-200 bg-white text-gray-400 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all shadow-sm"
+          className="absolute top-0 right-0 h-8 w-8 rounded-xl border border-stone-200 bg-white text-stone-400 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all shadow-sm flex items-center justify-center"
           title="사용 가이드">?</button>
-        <div className="text-5xl sm:text-6xl mb-2 sm:mb-3 select-none">🍽️</div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-800">우리 가족 식단 플래너</h1>
-        <p className="text-gray-500 mt-1.5 text-xs sm:text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-200 select-none">
+          <span className="text-3xl">🍽️</span>
+        </div>
+        <h1 className="text-2xl font-black text-stone-900 tracking-tight">우리 가족 식단 플래너</h1>
+        <p className="text-stone-400 mt-1.5 text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
       </div>
 
-      <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-6 sm:mb-8">
-        {stepLabels.map((lbl, i) => {
-          const s = i + 1, done = s < step, active = s === step;
-          return (
-            <React.Fragment key={s}>
-              <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${done ? 'bg-green-500 text-white' : active ? 'bg-orange-500 text-white shadow-orange-200 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
+      {/* 스텝 인디케이터 — 두 줄 구조로 정렬 문제 해결 */}
+      <div className="mb-7">
+        {/* 1행: 원 + 커넥터 */}
+        <div className="flex items-center justify-center">
+          {stepLabels.map((_, i) => {
+            const s = i + 1;
+            const done = s < step;
+            const active = s === step;
+            return (
+              <React.Fragment key={s}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all flex-shrink-0 ${
+                  done ? 'bg-green-500 text-white shadow-sm' :
+                  active ? 'bg-orange-600 text-white shadow-md shadow-orange-200' :
+                  'bg-stone-200 text-stone-400'
+                }`}>
                   {done ? '✓' : s}
                 </div>
-                <span className={`text-[10px] sm:text-xs mt-1 font-medium ${active ? 'text-orange-600' : 'text-gray-400'}`}>{lbl}</span>
-              </div>
-              {i < 2 && <div className={`w-8 sm:w-12 h-0.5 mb-5 rounded flex-shrink-0 ${done ? 'bg-green-400' : 'bg-gray-200'}`} />}
-            </React.Fragment>
-          );
-        })}
+                {i < 2 && (
+                  <div className={`w-14 sm:w-20 h-0.5 flex-shrink-0 transition-all ${done ? 'bg-green-400' : 'bg-stone-200'}`} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        {/* 2행: 라벨 */}
+        <div className="flex justify-between mt-1.5" style={{paddingLeft:'0.25rem', paddingRight:'0.25rem'}}>
+          {stepLabels.map((lbl, i) => (
+            <span key={i} className={`text-[10px] font-semibold flex-1 text-center ${i+1===step ? 'text-orange-600' : 'text-stone-400'}`}>{lbl}</span>
+          ))}
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+      {/* 폼 카드 */}
+      <div className="bg-white rounded-3xl border border-stone-100 card-shadow p-6">
         {step === 1 && <StepFamily members={members} setMembers={setMembers} />}
         {step === 2 && <StepPeriod period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />}
-        {step === 3 && <StepCuisine cuisines={cuisines} setCuisines={setCuisines} noSpicy={noSpicy} setNoSpicy={setNoSpicy} allergens={allergens} setAllergens={setAllergens} seasonBoost={seasonBoost} setSeasonBoost={setSeasonBoost} preferQuick={preferQuick} setPreferQuick={setPreferQuick} />}
+        {step === 3 && (
+          <StepCuisine
+            cuisines={cuisines} setCuisines={setCuisines}
+            noSpicy={noSpicy} setNoSpicy={setNoSpicy}
+            allergens={allergens} setAllergens={setAllergens}
+            seasonBoost={seasonBoost} setSeasonBoost={setSeasonBoost}
+            preferQuick={preferQuick} setPreferQuick={setPreferQuick}
+          />
+        )}
 
-        <div className="flex justify-between mt-8">
+        {/* 하단 버튼 */}
+        <div className="flex justify-between mt-7 pt-5 border-t border-stone-100">
           <button onClick={() => setStep(s => s-1)} disabled={step===1}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium disabled:opacity-30 hover:bg-gray-50 transition-all">
+            className="h-10 px-5 rounded-xl border border-stone-200 text-stone-600 font-medium text-sm disabled:opacity-30 hover:bg-stone-50 transition-all">
             ← 이전
           </button>
           {step < 3 ? (
             <button onClick={() => setStep(s => s+1)}
-              className="px-6 py-2.5 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-all shadow-md shadow-orange-200">
+              className="h-10 px-6 rounded-xl bg-orange-600 text-white font-bold text-sm hover:bg-orange-700 transition-all shadow-md shadow-orange-200">
               다음 →
             </button>
           ) : (
             <button onClick={() => onComplete({ members, period: finalPeriod, cuisines, noSpicy, allergens, seasonBoost, preferQuick })}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold hover:from-orange-600 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
+              className="h-10 px-6 rounded-xl bg-gradient-to-r from-orange-600 to-rose-500 text-white font-bold text-sm hover:from-orange-700 hover:to-rose-600 transition-all shadow-md shadow-orange-200">
               식단 생성 🎉
             </button>
           )}

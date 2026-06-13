@@ -23,6 +23,7 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
   const [showTemplate, setShowTemplate]     = useState(false);
   const [recipeMeal, setRecipeMeal]         = useState(null);
   const [toast, setToast]                   = useState(null);
+  const [showMore, setShowMore]             = useState(false);
   const toastTimer = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -226,79 +227,108 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
     <div className="max-w-5xl mx-auto p-3 py-6">
       <div className="print-title">우리 가족 식단표 ({config.period}일 플랜)</div>
 
-      <div className="flex items-center justify-between mb-5 no-print flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium transition-all">← 설정</button>
-          <div>
-            <h1 className="text-lg font-black text-gray-800">우리 가족 식단표</h1>
-            <p className="text-xs text-gray-400">
-              {config.members.length}인 가족 · {config.period}일 플랜 · {config.cuisines.map(c => CUISINE_INFO[c].label).join(' / ')}
-              {savedAt && <span className="ml-2 text-gray-300 hidden sm:inline">· 저장 {formatTime(savedAt)}</span>}
-            </p>
+      {/* ── 툴바 — 줄바뀜 없음, h-9 통일 ─────────── */}
+      <div className="flex items-center gap-2 mb-5 no-print">
+        {/* 왼쪽: 뒤로 + 제목 */}
+        <button onClick={onBack} className="tbtn tbtn-default border">← 설정</button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold text-stone-800 leading-tight">우리 가족 식단표</h1>
+          <p className="text-xs text-stone-400 leading-tight truncate">
+            {config.members.length}인 · {config.period}일 · {config.cuisines.map(c => CUISINE_INFO[c].label).join(' / ')}
+            {savedAt && <span className="hidden sm:inline"> · 저장 {formatTime(savedAt)}</span>}
+          </p>
+        </div>
+
+        {/* 오른쪽 — 데스크탑: 전체 표시 */}
+        <div className="hidden lg:flex items-center gap-1.5 flex-shrink-0">
+          <button onClick={() => setShowStats(s => !s)}
+            className={`tbtn ${showStats ? 'tbtn-active-indigo' : 'tbtn-default border'}`}>📊 통계</button>
+          <button onClick={() => setShowCustomDB(true)}
+            className={`tbtn ${customMeals.length > 0 ? 'tbtn-active-amber' : 'tbtn-default border'}`}>
+            ⭐{customMeals.length > 0 ? ` 내 메뉴 (${customMeals.length})` : ' 내 메뉴'}
+          </button>
+          <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }}
+            className="tbtn tbtn-default border">🛒 장보기</button>
+          <button onClick={() => setShowTemplate(true)}
+            className={`tbtn ${templates.length > 0 ? 'tbtn-active-violet' : 'tbtn-default border'}`}>
+            📋 템플릿{templates.length > 0 ? ` (${templates.length})` : ''}
+          </button>
+          <div className="w-px h-5 bg-stone-200" />
+          <button onClick={onRegen} className="tbtn tbtn-default border">🔄 재생성</button>
+          <button onClick={exportText} className="tbtn tbtn-default border">📄 복사</button>
+          <button onClick={() => shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO)}
+            className="tbtn tbtn-default border">🖼️</button>
+          <div className="w-px h-5 bg-stone-200" />
+          <button onClick={exportJSON} className="tbtn-icon tbtn-default border" title="JSON 백업">💾</button>
+          <button onClick={() => fileInputRef.current?.click()} className="tbtn-icon tbtn-default border" title="백업 불러오기">📂</button>
+          <button onClick={() => exportToCalendar(mealPlan, config, children, MEAL_TYPES)} className="tbtn-icon tbtn-default border" title="캘린더">📅</button>
+          <button onClick={() => window.print()}
+            className="tbtn border border-stone-700 bg-stone-800 text-white hover:bg-stone-700">🖨️ 인쇄</button>
+          <div className="w-px h-5 bg-stone-200" />
+          <button onClick={sharePlan} className="tbtn tbtn-primary">📤 공유</button>
+          {typeof window !== 'undefined' && window.Kakao?.isInitialized?.() && (
+            <button onClick={shareKakao} className="tbtn border border-yellow-300 bg-yellow-400 text-stone-900 font-semibold hover:bg-yellow-500">💬 카카오</button>
+          )}
+          <button onClick={onHelp} className="tbtn-icon tbtn-default border font-bold text-sm">?</button>
+        </div>
+
+        {/* 오른쪽 — 모바일/태블릿: 핵심만 + 더보기 */}
+        <div className="flex lg:hidden items-center gap-1.5 flex-shrink-0">
+          <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }}
+            className="tbtn-icon tbtn-default border" title="장보기">🛒</button>
+          <button onClick={sharePlan} className="tbtn tbtn-primary">
+            📤<span className="hidden sm:inline ml-1">공유</span>
+          </button>
+          <button onClick={onRegen} className="tbtn-icon tbtn-default border" title="재생성">🔄</button>
+          {/* 더보기 드롭다운 */}
+          <div className="relative">
+            <button onClick={() => setShowMore(s => !s)}
+              className={`tbtn-icon border font-bold text-base leading-none ${showMore ? 'bg-stone-100 border-stone-300 text-stone-700' : 'tbtn-default border'}`}>
+              ···
+            </button>
+            {showMore && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowMore(false)} />
+                <div className="absolute right-0 top-11 bg-white rounded-2xl card-shadow-md border border-stone-100 py-1.5 w-52 z-40 fade-in">
+                  <button onClick={() => { setShowStats(s => !s); setShowMore(false); }}
+                    className={`dditem ${showStats ? 'text-indigo-700 font-medium' : ''}`}>
+                    📊 <span>통계 {showStats ? '(닫기)' : ''}</span>
+                  </button>
+                  <button onClick={() => { setShowCustomDB(true); setShowMore(false); }} className="dditem">
+                    ⭐ <span>내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
+                  </button>
+                  <button onClick={() => { setShowTemplate(true); setShowMore(false); }} className="dditem">
+                    📋 <span>템플릿{templates.length > 0 ? ` (${templates.length})` : ''}</span>
+                  </button>
+                  <div className="h-px bg-stone-100 my-1" />
+                  <button onClick={() => { exportText(); setShowMore(false); }} className="dditem">
+                    📄 <span>텍스트 복사</span>
+                  </button>
+                  <button onClick={() => { shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO); setShowMore(false); }} className="dditem">
+                    🖼️ <span>이미지 공유</span>
+                  </button>
+                  <div className="h-px bg-stone-100 my-1" />
+                  <button onClick={() => { exportJSON(); setShowMore(false); }} className="dditem">
+                    💾 <span>JSON 백업</span>
+                  </button>
+                  <button onClick={() => { fileInputRef.current?.click(); setShowMore(false); }} className="dditem">
+                    📂 <span>백업 불러오기</span>
+                  </button>
+                  <button onClick={() => { exportToCalendar(mealPlan, config, children, MEAL_TYPES); setShowMore(false); }} className="dditem">
+                    📅 <span>캘린더 내보내기</span>
+                  </button>
+                  <button onClick={() => { window.print(); setShowMore(false); }} className="dditem">
+                    🖨️ <span>인쇄</span>
+                  </button>
+                  <div className="h-px bg-stone-100 my-1" />
+                  <button onClick={() => { shareApp(); setShowMore(false); }} className="dditem">🔗 <span>앱 공유하기</span></button>
+                  <button onClick={() => { onHelp(); setShowMore(false); }} className="dditem">❓ <span>사용 가이드</span></button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <div className="flex gap-1.5 flex-wrap items-center">
-          <button onClick={() => setShowStats(s => !s)} title="통계"
-            className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${showStats ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            📊<span className="hidden sm:inline ml-1">통계</span>
-          </button>
-          <button onClick={() => setShowCustomDB(true)} title="내 메뉴"
-            className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${customMeals.length > 0 ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            ⭐<span className="hidden sm:inline ml-1">내 메뉴{customMeals.length > 0 ? ` (${customMeals.length})` : ''}</span>
-          </button>
-          <button onClick={() => { setShowShopping(true); trackEvent('shopping_list_opened'); }} title="장보기"
-            className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
-            🛒<span className="hidden sm:inline ml-1">장보기</span>
-          </button>
-          <button onClick={() => setShowTemplate(true)} title="템플릿"
-            className={`px-2.5 py-2 rounded-xl border text-xs font-medium transition-all touch-target ${templates.length > 0 ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-            📋<span className="hidden sm:inline ml-1">템플릿{templates.length > 0 ? ` (${templates.length})` : ''}</span>
-          </button>
-          <button onClick={onRegen} title="전체 재생성"
-            className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
-            🔄<span className="hidden sm:inline ml-1">재생성</span>
-          </button>
-          <button onClick={exportText} title="텍스트 복사"
-            className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all touch-target">
-            📄<span className="hidden sm:inline ml-1">복사</span>
-          </button>
-          <button onClick={exportJSON} title="JSON 저장"
-            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            💾<span className="hidden lg:inline ml-1">백업</span>
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} title="백업 불러오기"
-            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            📂<span className="hidden lg:inline ml-1">불러오기</span>
-          </button>
-          <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
-          <button onClick={() => exportToCalendar(mealPlan, config, children, MEAL_TYPES)} title="캘린더 내보내기"
-            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            📅<span className="hidden lg:inline ml-1">캘린더</span>
-          </button>
-          <button onClick={() => shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO)} title="이미지로 공유"
-            className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-orange-50 hover:border-orange-300 transition-all touch-target">
-            🖼️<span className="hidden sm:inline ml-1">이미지</span>
-          </button>
-          <button onClick={() => window.print()} title="인쇄"
-            className="hidden lg:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
-            🖨️<span className="hidden lg:inline ml-1">인쇄</span>
-          </button>
-          <button onClick={sharePlan} title="식단 공유 링크"
-            className="px-2.5 py-2 rounded-xl border border-orange-200 bg-orange-50 text-xs font-medium text-orange-600 hover:bg-orange-100 transition-all touch-target">
-            👨‍👩‍👧 공유
-          </button>
-          {/* 카카오 SDK 로드 시 자동 활성화 */}
-          {typeof window !== 'undefined' && window.Kakao?.isInitialized?.() && (
-            <button onClick={shareKakao} title="카카오로 공유"
-              className="px-2.5 py-2 rounded-xl border border-yellow-300 bg-yellow-50 text-xs font-medium text-yellow-700 hover:bg-yellow-100 transition-all touch-target">
-              💬 카카오
-            </button>
-          )}
-          <button onClick={shareApp} aria-label="앱 공유하기"
-            className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center justify-center touch-target">🔗</button>
-          <button onClick={onHelp} aria-label="사용 가이드"
-            className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all flex items-center justify-center touch-target">?</button>
-        </div>
+        <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
       </div>
 
       <TodayCard
