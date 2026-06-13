@@ -201,8 +201,12 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
                         {!checked.has(item) && (
                           <a href={coupangUrl(item)} target="_blank" rel="noopener noreferrer sponsored"
                             onClick={e => e.stopPropagation()}
-                            className="flex-shrink-0 text-[10px] px-2 py-1 bg-red-50 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-100 hover:text-red-600 transition-all whitespace-nowrap">
-                            쿠팡↗
+                            className="flex-shrink-0 flex flex-col items-center gap-0.5"
+                            title="쿠팡 파트너스 광고 — 구매 시 수수료가 발생합니다">
+                            <span className="text-[8px] font-bold text-gray-300 uppercase tracking-wide leading-none">AD</span>
+                            <span className="text-[10px] px-2 py-1 bg-red-50 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-100 hover:text-red-600 transition-all whitespace-nowrap">
+                              쿠팡↗
+                            </span>
                           </a>
                         )}
                       </div>
@@ -235,11 +239,12 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
                         </button>
                       ))}
                     </div>
-                    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                    <div className="mt-2.5 pt-2.5 border-t border-gray-100 flex items-center gap-2">
                       <a href={coupangMealUrl()} target="_blank" rel="noopener noreferrer sponsored"
                         className="inline-flex items-center gap-1 text-[11px] text-red-500 font-semibold hover:text-red-600 transition-colors">
                         🛒 쿠팡에서 재료 장보기 →
                       </a>
+                      <span className="text-[9px] text-gray-300 font-bold border border-gray-200 px-1 rounded">광고</span>
                     </div>
                   </div>
                 );
@@ -256,15 +261,18 @@ export default function ShoppingListModal({ mealPlan, period, hasChildren, membe
             </button>
           )}
           <div className="px-3 pt-2 pb-1">
-            <p className="text-[10px] text-gray-400 mb-1.5">🛒 추천 식재료</p>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <p className="text-[10px] text-gray-400">🛒 추천 식재료</p>
+              <span className="text-[9px] font-bold text-gray-300 border border-gray-200 px-1 rounded">광고</span>
+            </div>
             <iframe
               src="./coupang-banner.html"
               width="100%" height="158"
               frameBorder="0" scrolling="no"
               style={{border:'none', borderRadius:'8px', display:'block'}}
-              title="쿠팡 추천 상품"
+              title="쿠팡 파트너스 광고 — 추천 식재료"
             />
-            <p className="text-[9px] text-gray-300 mt-1 text-right">쿠팡 파트너스 활동을 통해 수수료를 받을 수 있습니다</p>
+            <p className="text-[9px] text-gray-300 mt-1 text-right">이 링크는 쿠팡 파트너스 광고이며, 구매 시 수수료가 발생합니다</p>
           </div>
         </div>
       </div>

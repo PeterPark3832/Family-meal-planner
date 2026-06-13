@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { SAVE_KEY, CUSTOM_KEY, RATING_KEY, TEMPLATE_KEY } from './data/config.js';
 import { generatePlan, pickOneMeal } from './utils/algorithm.js';
 import { getMinAge, hasKids, trackEvent } from './utils/helpers.js';
+import { getShareToken, decodePlan, clearShareParam } from './utils/shareUtils.js';
 import PlanScreen from './components/PlanScreen.jsx';
 import SetupScreen from './components/SetupScreen.jsx';
 import HelpModal from './components/HelpModal.jsx';
@@ -53,8 +54,20 @@ export default function App() {
         try { localStorage.setItem('fmp_install_dismissed', '1'); } catch(e) {}
       }, []);
 
-      // 시작 시 localStorage 확인
+      // 시작 시 URL 공유 토큰 우선 확인, 없으면 localStorage
       useEffect(() => {
+        const token = getShareToken();
+        if (token) {
+          const shared = decodePlan(token);
+          if (shared) {
+            clearShareParam();
+            setConfig(shared.config);
+            setMealPlan(shared.mealPlan);
+            setScreen('plan');
+            trackEvent('shared_plan_loaded');
+            return;
+          }
+        }
         try {
           const raw = localStorage.getItem(SAVE_KEY);
           if (raw) {

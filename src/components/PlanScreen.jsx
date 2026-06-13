@@ -3,6 +3,7 @@ import { CUISINE_INFO, MEAL_TYPES, WEEK_DAYS, NUTRITION_INFO, IS_TOUCH } from '.
 import { getMinAge, hasKids, getDayNutrition, formatTime, trackEvent } from '../utils/helpers.js';
 import { pickOneMeal } from '../utils/algorithm.js';
 import { exportToCalendar, shareImage } from '../utils/exportUtils.js';
+import { buildShareUrl } from '../utils/shareUtils.js';
 import MealCell from './MealCell.jsx';
 import MobilePlanView from './MobilePlanView.jsx';
 import EditModal from './EditModal.jsx';
@@ -154,6 +155,42 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
     }
   }, [config.period, showToastMsg]);
 
+  const shareKakao = useCallback(() => {
+    const Kakao = window.Kakao;
+    if (!Kakao?.isInitialized()) {
+      // 카카오 SDK 미초기화 → URL 공유로 fallback
+      sharePlan();
+      return;
+    }
+    const shareUrl = buildShareUrl(config, mealPlan) || 'https://peterpark3832.github.io/Family-meal-planner/';
+    Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: `우리 가족 ${config.period}일 식단표 🍽️`,
+        description: `${config.members.length}인 가족 맞춤 식단을 공유합니다`,
+        imageUrl: 'https://peterpark3832.github.io/Family-meal-planner/og-image.svg',
+        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+      },
+      buttons: [{ title: '식단 보기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+    });
+    trackEvent('plan_shared_kakao');
+  }, [config, mealPlan]);
+
+  const sharePlan = useCallback(() => {
+    const url = buildShareUrl(config, mealPlan);
+    if (!url) { showToastMsg('⚠️ 공유 링크 생성에 실패했습니다'); return; }
+    if (navigator.share) {
+      navigator.share({
+        title: `우리 가족 ${config.period}일 식단표`,
+        text: '가족 식단을 공유합니다 🍽️',
+        url,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url).then(() => showToastMsg('✓ 식단 공유 링크를 복사했습니다'));
+    }
+    trackEvent('plan_shared');
+  }, [config, mealPlan, showToastMsg]);
+
   const exportText = useCallback(() => {
     const lines = [`🍽️ 우리 가족 식단표 (${config.period}일)`];
     if (children) lines.push('📌 [성인] / [아이] 분리 식단\n');
@@ -246,6 +283,17 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
             className="hidden lg:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
             🖨️<span className="hidden lg:inline ml-1">인쇄</span>
           </button>
+          <button onClick={sharePlan} title="식단 공유 링크"
+            className="px-2.5 py-2 rounded-xl border border-orange-200 bg-orange-50 text-xs font-medium text-orange-600 hover:bg-orange-100 transition-all touch-target">
+            👨‍👩‍👧 공유
+          </button>
+          {/* 카카오 SDK 로드 시 자동 활성화 */}
+          {typeof window !== 'undefined' && window.Kakao?.isInitialized?.() && (
+            <button onClick={shareKakao} title="카카오로 공유"
+              className="px-2.5 py-2 rounded-xl border border-yellow-300 bg-yellow-50 text-xs font-medium text-yellow-700 hover:bg-yellow-100 transition-all touch-target">
+              💬 카카오
+            </button>
+          )}
           <button onClick={shareApp} aria-label="앱 공유하기"
             className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center justify-center touch-target">🔗</button>
           <button onClick={onHelp} aria-label="사용 가이드"

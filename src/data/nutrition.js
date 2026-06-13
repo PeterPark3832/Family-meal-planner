@@ -54,6 +54,11 @@ export const MEAL_SEASONS = {
   '미역국':['봄'],'꽃게탕':['봄','가을'],'대게찜':['겨울','봄'],
   '팥죽':['겨울'],'호박죽':['가을'],'녹두죽':['여름','가을'],
   '삼겹살구이':['봄'],'보쌈':['겨울'],'족발':['여름'],
+  // 신규 계절 메뉴
+  '열무비빔국수':['여름'],'콩비지찌개':['겨울'],'버섯전골':['가을','겨울'],
+  '돼지갈비찜':['겨울'],'닭강정':['봄'],'닭죽':['겨울'],'곰탕':['겨울'],
+  '콥샐러드':['여름'],'시저샐러드':['여름'],'참치샐러드':['여름'],
+  '오향장육':['가을'],'치킨난반':['봄'],'에비텐우동':['겨울'],
 };
 
 // ── 영양 분류 — 중복 '갈비탕' 제거 ─────────────────
@@ -69,10 +74,21 @@ export const MEAL_NUTRITION = {
   '치킨 스테이크':'protein','비프 스튜':'protein','돈카츠':'protein','오야코동':'protein',
   '카츠동':'protein','규동':'protein','연어덮밥':'protein','야키토리':'protein',
   '타마고동':'protein','전복죽':'protein','동태찌개':'protein',
+  // 신규 단백질
+  '닭강정':'protein','삼계탕':'protein','닭찜':'protein','돼지갈비찜':'protein',
+  '닭계장':'protein','해물뚝배기':'protein','깐쇼새우':'protein','오향장육':'protein',
+  '치킨난반':'protein','돈코츠라멘':'protein','치킨카레':'protein',
+  '버거':'protein','참치샐러드':'protein','콥샐러드':'protein','참치덮밥':'protein',
+  '참치김밥':'protein','낫토덮밥':'protein','에비텐우동':'protein',
+  '닭죽':'protein','곰탕':'protein','북엇국+밥':'protein',
   // 채소 위주
   '야채죽':'veggie','흰죽':'veggie','호박죽':'veggie','두부조림':'veggie',
   '계란찜':'veggie','감자조림':'veggie','닭가슴살 샐러드':'veggie','콩국수':'veggie',
   '콩나물국밥':'veggie','포케볼':'veggie','미네스트로네':'veggie',
+  // 신규 채소
+  '시저샐러드':'veggie','잡곡밥+나물':'veggie','야채김밥':'veggie',
+  '버섯볶음밥':'veggie','아보카도토스트':'veggie','콥샐러드':'veggie',
+  '연두부찌개':'veggie','무국+밥':'veggie','애호박찌개':'veggie',
   // 탄수화물 위주
   '짜장면':'carb','짬뽕':'carb','크림파스타':'carb','토마토파스타':'carb',
   '오일파스타':'carb','까르보나라':'carb','미트볼 스파게티':'carb',
@@ -83,6 +99,13 @@ export const MEAL_NUTRITION = {
   '프렌치토스트':'carb','볶음밥':'carb','오므라이스':'carb','리조또':'carb',
   '라멘':'carb','미소라멘':'carb','타코':'carb','부리또':'carb','뇨키':'carb',
   '마라탕':'carb',
+  // 신규 탄수화물
+  '잔치국수':'carb','열무비빔국수':'carb','김밥':'carb','야채김밥':'carb','김밥':'carb',
+  '오니기리':'carb','이나리스시':'carb','버섯크림파스타':'carb','페스토파스타':'carb',
+  '탄탄멘':'carb','아부라소바':'carb','계란볶음밥':'carb','삼선볶음밥':'carb',
+  '소시지야채볶음밥':'carb','건새우볶음밥':'carb','팥죽':'carb',
+  '핫도그':'carb','스크램블에그+토스트':'carb','브런치플레이트':'carb',
+  '베이컨에그라이스':'carb','크로크마담':'carb',
   // 균형 잡힌
   '김치찌개':'balanced','된장찌개':'balanced','순두부찌개':'balanced',
   '부대찌개':'balanced','청국장찌개':'balanced','만두국':'balanced',
@@ -91,6 +114,10 @@ export const MEAL_NUTRITION = {
   '카레라이스':'balanced','소불고기덮밥':'balanced','샤브샤브':'balanced',
   '스키야키':'balanced','훠궈 (전골)':'balanced','나베 (전골)':'balanced',
   '육개장':'balanced','소고기뭇국':'balanced',
+  // 신규 균형
+  '소고기미역국+밥':'balanced','콩비지찌개':'balanced','버섯전골':'balanced',
+  '두반장두부':'balanced','군만두':'balanced','오향장육':'balanced',
+  '프렌치어니언수프':'balanced','탄탄멘':'balanced',
 };
 
 // ── 조리 시간 분류 ───────────────────────────────────
@@ -132,4 +159,21 @@ export const MEAL_PREP_TIME = {
   '마라탕':'long','마라샹궈':'long','훠궈 (전골)':'long',
   '샤브샤브':'long','스키야키':'long','나베 (전골)':'long',
   '삼계탕':'long','쌈밥':'long','수제비':'long','칼국수':'long',
+  // 신규 조리 시간
+  '김밥':'medium','참치김밥':'medium','야채김밥':'medium','닭강정':'medium',
+  '소시지야채볶음밥':'quick','버섯볶음밥':'quick','건새우볶음밥':'quick',
+  '계란볶음밥':'quick','삼선볶음밥':'medium','오니기리':'quick','이나리스시':'medium',
+  '낫토덮밥':'quick','타마고동':'quick','아보카도토스트':'quick',
+  '스크램블에그+토스트':'quick','핫도그':'quick','베이컨에그라이스':'quick',
+  '버거':'medium','시저샐러드':'quick','참치샐러드':'quick','콥샐러드':'quick',
+  '버섯크림파스타':'medium','페스토파스타':'medium','치킨카레':'medium',
+  '프렌치어니언수프':'medium','크로크마담':'quick','브런치플레이트':'medium',
+  '잔치국수':'medium','열무비빔국수':'quick','참치덮밥':'quick',
+  '아부라소바':'quick','탄탄멘':'medium','돈코츠라멘':'quick','에비텐우동':'medium',
+  '치킨난반':'medium','두반장두부':'medium','깐쇼새우':'medium','오향장육':'long',
+  '군만두':'medium','콩비지찌개':'medium','버섯전골':'medium',
+  '돼지갈비찜':'long','닭찜':'long','닭계장':'long','해물뚝배기':'medium',
+  '삼계탕':'long','곰탕':'long','닭죽':'long','팥죽':'medium',
+  '소고기미역국+밥':'medium','무국+밥':'medium','연두부찌개':'medium',
+  '애호박찌개':'medium','북엇국+밥':'quick','잡곡밥+나물':'medium',
 };
