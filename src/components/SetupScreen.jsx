@@ -44,27 +44,29 @@ function StepFamily({ members, setMembers }) {
       </div>
       <div className="space-y-2.5">
         {members.map((m, i) => (
-          <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg flex-shrink-0">
+          <div key={i} className="flex items-start gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
               {m.type==='child' ? '🧒' : m.gender==='male' ? '👨' : '👩'}
             </div>
-            <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">
-              <select value={m.type} onChange={e => update(i,'type',e.target.value)}
-                className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400">
-                <option value="adult">성인</option>
-                <option value="child">자녀</option>
-              </select>
-              <select value={m.gender} onChange={e => update(i,'gender',e.target.value)}
-                className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400">
-                <option value="male">남성</option>
-                <option value="female">여성</option>
-              </select>
-              <div className="flex items-center gap-1">
-                <input type="number" value={m.age}
-                  onChange={e => update(i,'age',parseInt(e.target.value)||0)}
-                  min={m.type==='child'?1:18} max={99}
-                  className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center bg-white focus:outline-none focus:border-orange-400" />
-                <span className="text-gray-500 text-sm">세</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <select value={m.type} onChange={e => update(i,'type',e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400 flex-1 min-w-[72px]">
+                  <option value="adult">성인</option>
+                  <option value="child">자녀</option>
+                </select>
+                <select value={m.gender} onChange={e => update(i,'gender',e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-orange-400 flex-1 min-w-[72px]">
+                  <option value="male">남성</option>
+                  <option value="female">여성</option>
+                </select>
+                <div className="flex items-center gap-1">
+                  <input type="number" value={m.age}
+                    onChange={e => update(i,'age',parseInt(e.target.value)||0)}
+                    min={m.type==='child'?1:18} max={99}
+                    className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center bg-white focus:outline-none focus:border-orange-400" />
+                  <span className="text-gray-500 text-sm">세</span>
+                </div>
               </div>
             </div>
           </div>
@@ -241,7 +243,7 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
   const stepLabels  = ['가족 구성원','식단 기간','요리 종류'];
 
   return (
-    <div className="max-w-xl mx-auto p-4 py-10">
+    <div className="max-w-xl mx-auto p-4 py-6 sm:py-10">
       {restoreData && (
         <RestorePrompt
           savedAt={restoreData.savedAt}
@@ -250,27 +252,27 @@ export default function SetupScreen({ onComplete, restore, onHelp }) {
         />
       )}
 
-      <div className="text-center mb-8 relative">
+      <div className="text-center mb-6 sm:mb-8 relative">
         <button onClick={onHelp}
           className="absolute top-0 right-0 w-8 h-8 rounded-full border border-gray-200 bg-white text-gray-400 text-sm font-bold hover:bg-orange-50 hover:border-orange-300 hover:text-orange-500 transition-all shadow-sm"
           title="사용 가이드">?</button>
-        <div className="text-6xl mb-3 select-none">🍽️</div>
-        <h1 className="text-3xl font-black text-gray-800">우리 가족 식단 플래너</h1>
-        <p className="text-gray-500 mt-2 text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
+        <div className="text-5xl sm:text-6xl mb-2 sm:mb-3 select-none">🍽️</div>
+        <h1 className="text-2xl sm:text-3xl font-black text-gray-800">우리 가족 식단 플래너</h1>
+        <p className="text-gray-500 mt-1.5 text-xs sm:text-sm">맞춤형 식단으로 건강한 한 주를 시작해요</p>
       </div>
 
-      <div className="flex items-center justify-center gap-1.5 mb-8">
+      <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-6 sm:mb-8">
         {stepLabels.map((lbl, i) => {
           const s = i + 1, done = s < step, active = s === step;
           return (
             <React.Fragment key={s}>
               <div className="flex flex-col items-center">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${done ? 'bg-green-500 text-white' : active ? 'bg-orange-500 text-white shadow-orange-200 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all shadow-sm ${done ? 'bg-green-500 text-white' : active ? 'bg-orange-500 text-white shadow-orange-200 shadow-lg' : 'bg-gray-200 text-gray-400'}`}>
                   {done ? '✓' : s}
                 </div>
-                <span className={`text-xs mt-1 font-medium ${active ? 'text-orange-600' : 'text-gray-400'}`}>{lbl}</span>
+                <span className={`text-[10px] sm:text-xs mt-1 font-medium ${active ? 'text-orange-600' : 'text-gray-400'}`}>{lbl}</span>
               </div>
-              {i < 2 && <div className={`w-12 h-0.5 mb-5 rounded ${done ? 'bg-green-400' : 'bg-gray-200'}`} />}
+              {i < 2 && <div className={`w-8 sm:w-12 h-0.5 mb-5 rounded flex-shrink-0 ${done ? 'bg-green-400' : 'bg-gray-200'}`} />}
             </React.Fragment>
           );
         })}

@@ -16,11 +16,41 @@ export default function App() {
       const [ratings, setRatings]         = useState({});
       const [templates, setTemplates]     = useState([]);
       const [showHelp, setShowHelp]       = useState(false);
+      const [installPrompt, setInstallPrompt] = useState(null);
+      const [showInstallBanner, setShowInstallBanner] = useState(false);
 
       const openHelp  = useCallback(() => setShowHelp(true), []);
       const closeHelp = useCallback(() => {
         try { localStorage.setItem('fmp_help_seen', '1'); } catch(e) {}
         setShowHelp(false);
+      }, []);
+
+      // PWA 설치 프롬프트 캡처
+      useEffect(() => {
+        const handler = (e) => {
+          e.preventDefault();
+          setInstallPrompt(e);
+          // 이미 설치된 경우 배너 표시 안 함
+          try {
+            if (!localStorage.getItem('fmp_install_dismissed')) setShowInstallBanner(true);
+          } catch(err) { setShowInstallBanner(true); }
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+      }, []);
+
+      const handleInstall = useCallback(async () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        trackEvent('pwa_install_prompt', { outcome });
+        setInstallPrompt(null);
+        setShowInstallBanner(false);
+      }, [installPrompt]);
+
+      const dismissInstall = useCallback(() => {
+        setShowInstallBanner(false);
+        try { localStorage.setItem('fmp_install_dismissed', '1'); } catch(e) {}
       }, []);
 
       // 시작 시 localStorage 확인
@@ -155,6 +185,30 @@ export default function App() {
         });
       }, []);
 
+      const InstallBanner = showInstallBanner && (
+        <div className="install-banner fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100 shadow-xl z-50 fade-in">
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-3 px-4 pt-3 pb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-2xl flex-shrink-0">📱</span>
+              <div className="min-w-0">
+                <div className="font-bold text-gray-800 text-sm">홈 화면에 추가하기</div>
+                <div className="text-xs text-gray-500 truncate">앱처럼 빠르게 실행할 수 있어요</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={dismissInstall}
+                className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                나중에
+              </button>
+              <button onClick={handleInstall}
+                className="px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition-all shadow-sm">
+                설치
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
       if (screen === 'plan') {
         return (
           <>
@@ -178,6 +232,7 @@ export default function App() {
               onHelp={openHelp}
             />
             {showHelp && <HelpModal onClose={closeHelp} />}
+            {InstallBanner}
           </>
         );
       }
@@ -185,6 +240,7 @@ export default function App() {
         <>
           <SetupScreen onComplete={handleComplete} restore={restore} onHelp={openHelp} />
           {showHelp && <HelpModal onClose={closeHelp} />}
+          {InstallBanner}
         </>
       );
     }

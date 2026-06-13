@@ -226,25 +226,25 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
             📄<span className="hidden sm:inline ml-1">복사</span>
           </button>
           <button onClick={exportJSON} title="JSON 저장"
-            className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            💾<span className="hidden sm:inline ml-1">백업</span>
+            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+            💾<span className="hidden lg:inline ml-1">백업</span>
           </button>
           <button onClick={() => fileInputRef.current?.click()} title="백업 불러오기"
-            className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            📂<span className="hidden sm:inline ml-1">불러오기</span>
+            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+            📂<span className="hidden lg:inline ml-1">불러오기</span>
           </button>
           <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
           <button onClick={() => exportToCalendar(mealPlan, config, children, MEAL_TYPES)} title="캘린더 내보내기"
-            className="hidden sm:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
-            📅<span className="hidden sm:inline ml-1">캘린더</span>
+            className="hidden lg:flex px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all">
+            📅<span className="hidden lg:inline ml-1">캘린더</span>
           </button>
           <button onClick={() => shareImage(mealPlan, config, week, weekStart, totalWeeks, children, MEAL_TYPES, NUTRITION_INFO)} title="이미지로 공유"
             className="px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-orange-50 hover:border-orange-300 transition-all touch-target">
             🖼️<span className="hidden sm:inline ml-1">이미지</span>
           </button>
           <button onClick={() => window.print()} title="인쇄"
-            className="hidden sm:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
-            🖨️<span className="hidden sm:inline ml-1">인쇄</span>
+            className="hidden lg:flex px-2.5 py-2 rounded-xl bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 transition-all">
+            🖨️<span className="hidden lg:inline ml-1">인쇄</span>
           </button>
           <button onClick={shareApp} aria-label="앱 공유하기"
             className="w-8 h-8 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-orange-50 hover:border-orange-300 transition-all flex items-center justify-center touch-target">🔗</button>
@@ -432,7 +432,7 @@ export default function PlanScreen({ config, mealPlan, setMealPlan, savedAt, onB
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-xl z-[60] fade-in pointer-events-none">
+        <div className="toast-bottom fixed left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-xl z-[60] fade-in pointer-events-none">
           {toast}
         </div>
       )}

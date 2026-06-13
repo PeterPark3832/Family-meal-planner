@@ -1,15 +1,17 @@
 {
   "name": "우리 가족 식단 플래너",
   "short_name": "식단 플래너",
-  "description": "가족 맞춤형 식단을 자동으로 추천해주는 앱",
+  "description": "가족 구성원·나이·알레르기에 맞는 주간 식단을 자동으로 만들어드립니다. 장보기 목록·레시피 검색·식단 평가까지 무료 제공.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#fff7ed",
   "theme_color": "#f97316",
   "lang": "ko",
-  "orientation": "any",
-  "categories": ["lifestyle", "food"],
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "food", "health"],
   "icons": [
     {
       "src": "icon.svg",
@@ -23,5 +25,24 @@
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "새 식단 만들기",
+      "short_name": "새 식단",
+      "description": "가족 정보를 입력하고 새 식단을 생성합니다",
+      "url": "./",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "우리 가족 식단 플래너 — 주간 식단 자동 생성"
+    }
+  ],
+  "prefer_related_applications": false
 }

@@ -81,15 +81,35 @@ function MobileMealCard({ mealType, meal, hasChildren, ratings, onEditAdult, onE
 }
 
 export default function MobilePlanView({ mealPlan, config, hasChildren, ratings, onEdit, onRate, onRecipe, onRegen }) {
-  const period  = config.period;
-  const todayDow  = new Date().getDay();
+  const period      = config.period;
+  const totalWeeks  = Math.ceil(period / 7);
+  const todayDow    = new Date().getDay();
   const todayDayIdx = todayDow === 0 ? 6 : todayDow - 1;
-  const initDay = (() => {
-    for (let i = 0; i < period; i++) { if (i % 7 === todayDayIdx) return i; }
+
+  // 오늘이 속한 주차를 초기 주차로 설정 (week 0 = 1주차)
+  const initWeek = (() => {
+    for (let i = 0; i < period; i++) {
+      if (i % 7 === todayDayIdx) return Math.floor(i / 7);
+    }
     return 0;
   })();
-  const [selectedDay, setSelectedDay] = useState(initDay);
+  const initDay = initWeek * 7 + todayDayIdx;
+
+  const [selectedWeek, setSelectedWeek] = useState(initWeek);
+  const [selectedDay,  setSelectedDay]  = useState(Math.min(initDay, period - 1));
   const dayRef = React.useRef(null);
+
+  // 주차 변경 시 해당 주의 첫 날로 이동
+  const handleWeekChange = (w) => {
+    setSelectedWeek(w);
+    setSelectedDay(w * 7);
+  };
+
+  // 날 변경 시 주차도 동기화
+  const handleDayChange = (i) => {
+    setSelectedDay(i);
+    setSelectedWeek(Math.floor(i / 7));
+  };
 
   useEffect(() => {
     if (dayRef.current) {
@@ -98,24 +118,45 @@ export default function MobilePlanView({ mealPlan, config, hasChildren, ratings,
     }
   }, [selectedDay]);
 
-  const meal = mealPlan[selectedDay] || {};
+  const weekStart = selectedWeek * 7;
+  const weekEnd   = Math.min(weekStart + 7, period);
+  const meal      = mealPlan[selectedDay] || {};
 
   return (
     <div>
-      <div ref={dayRef} className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar" style={{scrollbarWidth:'none'}}>
-        {Array.from({length: period}, (_, i) => {
-          const dow = i % 7;
-          const isSat = dow === 5, isSun = dow === 6;
-          const isToday = dow === todayDayIdx && i < 7;
-          const sel = selectedDay === i;
+      {/* 주차 탭 — 14일 이상일 때만 표시 */}
+      {totalWeeks > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+          {Array.from({ length: totalWeeks }, (_, w) => (
+            <button key={w} onClick={() => handleWeekChange(w)}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                selectedWeek === w
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-500'
+              }`}>
+              {w + 1}주차
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 요일 선택 — 현재 주차의 7일만 표시 */}
+      <div ref={dayRef} className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
+        {Array.from({ length: weekEnd - weekStart }, (_, i) => {
+          const di  = weekStart + i;
+          const dow = di % 7;
+          const isSat   = dow === 5;
+          const isSun   = dow === 6;
+          const isToday = dow === todayDayIdx && selectedWeek === initWeek;
+          const sel     = selectedDay === di;
           return (
-            <button key={i} data-day={i} onClick={() => setSelectedDay(i)}
+            <button key={di} data-day={di} onClick={() => handleDayChange(di)}
               className={`flex-shrink-0 flex flex-col items-center px-3.5 py-2 rounded-2xl transition-all ${
                 sel     ? 'bg-orange-500 text-white shadow-md' :
                 isToday ? 'bg-orange-50 border-2 border-orange-300 text-orange-600' :
                           'bg-white border border-gray-200 text-gray-600'
               }`}>
-              <span className="text-[10px] font-medium opacity-70">{i+1}일</span>
+              <span className="text-[10px] font-medium opacity-70">{di + 1}일</span>
               <span className={`text-sm font-black ${!sel && (isSat ? 'text-blue-500' : isSun ? 'text-red-500' : '')}`}>
                 {WEEK_DAYS[dow]}
               </span>

@@ -6,6 +6,13 @@
 
 * { font-family: 'Noto Sans KR', sans-serif; box-sizing: border-box; }
 
+/* ── 안전 영역 (iPhone 노치/홈바) ───────────────────── */
+body {
+  padding-left:   env(safe-area-inset-left,   0px);
+  padding-right:  env(safe-area-inset-right,  0px);
+}
+
+/* ── 식단 셀 카드 ─────────────────────────────────── */
 .meal-card { transition: all 0.15s ease; }
 .meal-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.13); }
 .meal-card:active { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.10); }
@@ -15,34 +22,69 @@
   .dice-btn { opacity: 0; transition: opacity 0.15s; }
   .cell-wrap:hover .dice-btn { opacity: 1; }
 }
-/* 터치 기기: dice-btn 항상 표시 */
+/* 터치 기기: dice-btn 항상 표시, 호버 애니메이션 비활성 */
 @media (hover: none) {
   .dice-btn { opacity: 1; }
   .meal-card:hover { transform: none; box-shadow: none; }
 }
 
+/* ── 주간 그리드 스크롤 ──────────────────────────── */
 .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .week-scroll::-webkit-scrollbar { height: 5px; }
 .week-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 
+/* ── 애니메이션 ──────────────────────────────────── */
 .fade-in  { animation: fadeIn 0.22s ease; }
 .slide-up { animation: slideUp 0.28s ease; }
 @keyframes fadeIn  { from { opacity:0; transform:translateY(6px); }  to { opacity:1; transform:translateY(0); } }
 @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
+/* ── 인쇄 ────────────────────────────────────────── */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .no-print { display: none !important; }
-  body { background: white !important; }
+  body { background: white !important; padding: 0 !important; }
   .print-wrap { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
   .print-title { display: block !important; text-align: center; font-size: 18px; font-weight: 900; margin-bottom: 12px; }
 }
 .print-title { display: none; }
+
+/* ── 오늘 컬럼 하이라이트 ────────────────────────── */
 .today-col { background: linear-gradient(to bottom, #fff7ed, #fff) !important; }
 .today-header { color: #ea580c !important; }
 
+/* ── 터치 타겟 최소 크기 ─────────────────────────── */
 @media (max-width: 640px) {
-  .touch-target { min-width: 36px; min-height: 36px; }
+  .touch-target { min-width: 40px; min-height: 40px; }
 }
+@media (min-width: 641px) {
+  .touch-target { min-width: 32px; min-height: 32px; }
+}
+
+/* ── 스크롤바 숨김 ───────────────────────────────── */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── PWA 설치 배너 safe-area ─────────────────────── */
+.install-banner {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+}
+
+/* ── 토스트 safe-area ────────────────────────────── */
+.toast-bottom {
+  bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+}
+
+/* ── 해상도별 폰트 크기 조정 ─────────────────────── */
+@media (max-width: 360px) {
+  .text-responsive-sm { font-size: 11px; }
+  .text-responsive-base { font-size: 13px; }
+}
+@media (min-width: 361px) and (max-width: 640px) {
+  .text-responsive-sm { font-size: 12px; }
+  .text-responsive-base { font-size: 14px; }
+}
+@media (min-width: 641px) {
+  .text-responsive-sm { font-size: 13px; }
+  .text-responsive-base { font-size: 15px; }
+}
